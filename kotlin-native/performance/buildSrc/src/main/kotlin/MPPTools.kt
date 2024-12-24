@@ -58,6 +58,7 @@ fun targetHostPreset(
     return when(crossTarget) {
         "linuxArm64" -> subproject.kotlin::linuxArm64
         "linuxX64" -> subproject.kotlin::linuxX64
+        "ohosArm64" -> subproject.kotlin::ohosArm64
         else -> throw Exception("Running becnhmarks on target $crossTarget isn't supported yet.")
     }
 }
