@@ -1,0 +1,3 @@
+[submodule "third-party/third_party_bounds_checking_function"]
+	path = third-party/third_party_bounds_checking_function
+	url = https://gitee.com/openharmony/third_party_bounds_checking_function.git
