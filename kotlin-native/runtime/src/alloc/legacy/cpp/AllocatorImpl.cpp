@@ -52,7 +52,9 @@ void alloc::Allocator::TraverseAllocatedExtraObjects(std::function<void(mm::Extr
     }
 }
 
-alloc::Allocator::Allocator() noexcept : impl_(std::make_unique<Impl>()) {}
+alloc::Allocator::Allocator() noexcept : impl_(std::make_unique<Impl>()) {
+      RuntimeLogInfo({kTagGC}, "Legacy Allocator initialized");
+}
 
 alloc::Allocator::~Allocator() = default;
 

@@ -39,7 +39,9 @@ void alloc::Allocator::ThreadData::clearForTests() noexcept {
     impl_->alloc().PrepareForGC();
 }
 
-alloc::Allocator::Allocator() noexcept : impl_(std::make_unique<Impl>()) {}
+alloc::Allocator::Allocator() noexcept : impl_(std::make_unique<Impl>()) {
+    RuntimeLogInfo({kTagGC}, "Custom Allocator initialized");
+}
 
 alloc::Allocator::~Allocator() = default;
 
