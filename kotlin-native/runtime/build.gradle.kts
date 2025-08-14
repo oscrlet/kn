@@ -64,6 +64,52 @@ bitcode {
             sourceSets {}
         }
 
+        module("common_components") {
+            sourceSets{
+                main {
+                    inputFiles.from(srcRoot.dir("heap/allocator"));
+                    inputFiles.include("**/*.cpp")
+                    inputFiles.exclude("tests/")
+                    headersDirs.setFrom(srcRoot.dir("../"), 
+                    srcRoot.dir("./"), 
+                    srcRoot.dir("../common_interfaces"), 
+                    srcRoot.dir("../libpandabase"),
+                    srcRoot.dir("../third_party_bounds_checking_function/include")) 
+                }
+            }
+            compilerArgs.set(listOfNotNull(
+                "-Wall",
+                "-Wshadow",
+                "-Werror",
+                "-Wextra",
+                "-pedantic",
+                "-Wno-invalid-offsetof",
+                "-Wno-gnu-statement-expression",
+                "-pipe",
+                "-Wdate-time",
+                "-funwind-tables",
+                "-fno-rtti",
+                "-fasynchronous-unwind-tables",
+                "-Wformat=2",
+                "-std=c++17",
+                "-Wno-unused-command-line-argument",
+                "-Wno-variadic-macros",
+                "-Wno-gnu-anonymous-struct",
+                "-Wno-zero-length-array",
+                "-Wno-nested-anon-types",
+                "-Wno-c99-extensions",
+                "-Wno-unused-parameter",
+                "-Wno-shadow",
+                "-Wno-pedantic",
+                "-Wno-gnu-zero-variadic-macro-arguments",
+                "-Wno-unused-lambda-capture",
+                "-Wno-unused-function",
+                "-Wno-unused-variable",
+                //"-Wno-unused-but-set-variable",
+            ))
+        }
+
+
         module("mimalloc") {
             sourceSets {
                 main {
