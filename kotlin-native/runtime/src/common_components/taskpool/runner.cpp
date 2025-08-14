@@ -15,7 +15,8 @@
 
 #include "common_components/taskpool/runner.h"
 
-#include "libpandabase/os/thread.h"
+// Adapt ld
+// #include "libpandabase/os/thread.h"
 #ifdef ENABLE_QOS
 #include "qos.h"
 #endif
@@ -111,8 +112,9 @@ void Runner::SetQosPriority([[maybe_unused]] PriorityMode mode)
 
 void Runner::RecordThreadId()
 {
-    std::lock_guard<std::mutex> guard(mtx_);
-    gcThreadId_.emplace_back(panda::os::thread::GetCurrentThreadId());
+    // Adapt for ld: 所依赖的panda函数没有找到.
+//    std::lock_guard<std::mutex> guard(mtx_);
+//    gcThreadId_.emplace_back(panda::os::thread::GetCurrentThreadId());
 }
 
 void Runner::SetRunTask(uint32_t threadId, Task *task)
@@ -123,15 +125,16 @@ void Runner::SetRunTask(uint32_t threadId, Task *task)
 
 void Runner::Run(uint32_t threadId)
 {
-    native_handle_type thread = panda::os::thread::GetNativeHandle();
-    panda::os::thread::SetThreadName(thread, "OS_GC_Thread");
-    PrologueHook(thread);
-    RecordThreadId();
-    while (std::unique_ptr<Task> task = taskQueue_.PopTask()) {
-        SetRunTask(threadId, task.get());
-        task->Run(threadId);
-        SetRunTask(threadId, nullptr);
-    }
-    EpilogueHook(thread);
+    // Adapt for ld: 所依赖的panda函数没有找到.
+//    native_handle_type thread = panda::os::thread::GetNativeHandle();
+//    panda::os::thread::SetThreadName(thread, "OS_GC_Thread");
+//     PrologueHook(thread);
+//     RecordThreadId();
+//     while (std::unique_ptr<Task> task = taskQueue_.PopTask()) {
+//         SetRunTask(threadId, task.get());
+//         task->Run(threadId);
+//         SetRunTask(threadId, nullptr);
+//     }
+//    EpilogueHook(thread);
 }
 }  // namespace common

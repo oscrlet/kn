@@ -130,7 +130,8 @@ MemoryMap* MemoryMap::MapMemoryAlignInner4G(uint64_t reqSize, uint64_t initSize,
     munmap(rightUnmapAddr, rightUnmapSize);
 #endif
 #endif
-    SetBaseAddress(baseAddr);
+// Adapt for ld.
+   SetBaseAddress(baseAddr);
 
     bool failure = false;
 #if defined(_WIN64) || defined(__APPLE__)

@@ -466,6 +466,8 @@ HeapAddress AllocationBuffer::AllocateImpl(size_t totalSize, AllocType allocType
         return tlOldRegion_->Alloc(totalSize);
     }
     UNREACHABLE();
+    // tmp:
+    return 0;
 }
 
 HeapAddress AllocationBuffer::AllocateRawPointerObject(size_t totalSize)

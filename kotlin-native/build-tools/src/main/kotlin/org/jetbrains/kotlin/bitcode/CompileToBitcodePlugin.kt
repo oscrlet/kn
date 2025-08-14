@@ -149,10 +149,12 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
 
     // TODO: These should be set by the plugin users.
     private val DEFAULT_CPP_FLAGS = listOfNotNull(
-            "-gdwarf-2".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.isNativeRuntimeDebugInfoEnabled", false) },
+          //  "-gdwarf-2".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.isNativeRuntimeDebugInfoEnabled", false) },
+          "-gdwarf-2",
             "-std=c++17",
             "-Werror",
-            "-O2",
+          //  "-O2",
+            "-O0",
             "-fno-aligned-allocation", // TODO: Remove when all targets support aligned allocation in C++ runtime.
             "-Wall",
             "-Wextra",

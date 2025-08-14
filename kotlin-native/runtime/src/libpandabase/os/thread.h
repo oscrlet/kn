@@ -16,6 +16,9 @@
 #ifndef LIBPANDABASE_OS_THREAD_H
 #define LIBPANDABASE_OS_THREAD_H
 
+// Adapt ld
+#define PANDA_TARGET_UNIX
+
 #include "os/error.h"
 #include "utils/expected.h"
 

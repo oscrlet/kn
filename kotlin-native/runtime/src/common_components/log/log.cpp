@@ -15,8 +15,8 @@
 
 #include "common_components/log/log.h"
 
-#include "generated/base_options.h"
-#include "libpandabase/utils/logger.h"
+// #include "generated/base_options.h"
+// #include "libpandabase/utils/logger.h"
 
 #ifdef ENABLE_ANLOG
 #include <android/log.h>
@@ -122,29 +122,29 @@ std::string Log::LevelToString(Level level)
 
 int32_t Log::PrintLogger(int32_t, int32_t level, const char *, const char *, const char *message)
 {
-    switch (level) { //LCOV_EXCL_BR_LINE
-        case panda::Logger::PandaLog2MobileLog::VERBOSE: //LCOV_EXCL_BR_LINE
-            LOG_COMMON(VERBOSE) << message;
-            break;
-        case panda::Logger::PandaLog2MobileLog::DEBUG: //LCOV_EXCL_BR_LINE
-            LOG_COMMON(DEBUG) << message;
-            break;
-        case panda::Logger::PandaLog2MobileLog::INFO: //LCOV_EXCL_BR_LINE
-            LOG_COMMON(INFO) << message;
-            break;
-        case panda::Logger::PandaLog2MobileLog::WARN: //LCOV_EXCL_BR_LINE
-            LOG_COMMON(WARN) << message;
-            break;
-        case panda::Logger::PandaLog2MobileLog::ERROR: //LCOV_EXCL_BR_LINE
-            LOG_COMMON(ERROR) << message;
-            break;
-        case panda::Logger::PandaLog2MobileLog::FATAL: //LCOV_EXCL_BR_LINE
-            LOG_COMMON(FATAL) << message;
-            break;
-        default: //LCOV_EXCL_BR_LINE
-            LOG_COMMON(DEBUG) << message;
-            break;
-    }
+    // switch (level) { //LCOV_EXCL_BR_LINE
+    //     case panda::Logger::PandaLog2MobileLog::VERBOSE: //LCOV_EXCL_BR_LINE
+    //         LOG_COMMON(VERBOSE) << message;
+    //         break;
+    //     case panda::Logger::PandaLog2MobileLog::DEBUG: //LCOV_EXCL_BR_LINE
+    //         LOG_COMMON(DEBUG) << message;
+    //         break;
+    //     case panda::Logger::PandaLog2MobileLog::INFO: //LCOV_EXCL_BR_LINE
+    //         LOG_COMMON(INFO) << message;
+    //         break;
+    //     case panda::Logger::PandaLog2MobileLog::WARN: //LCOV_EXCL_BR_LINE
+    //         LOG_COMMON(WARN) << message;
+    //         break;
+    //     case panda::Logger::PandaLog2MobileLog::ERROR: //LCOV_EXCL_BR_LINE
+    //         LOG_COMMON(ERROR) << message;
+    //         break;
+    //     case panda::Logger::PandaLog2MobileLog::FATAL: //LCOV_EXCL_BR_LINE
+    //         LOG_COMMON(FATAL) << message;
+    //         break;
+    //     default: //LCOV_EXCL_BR_LINE
+    //         LOG_COMMON(DEBUG) << message;
+    //         break;
+    // }
     return 0;
 }
 
@@ -154,12 +154,12 @@ void Log::Initialize(const LogOptions &options)
     level_ = options.level;
     components_ = options.component;
 
-    // For runtime core log
-    panda::base_options::Options baseOptions("");
-    baseOptions.SetLogLevel(LevelToString(level_));
-    baseOptions.SetLogComponents({ "all" });
-    panda::Logger::Initialize(baseOptions);
-    panda::Logger::SetMobileLogPrintEntryPointByPtr(reinterpret_cast<void *>(Log::PrintLogger));
+    // // For runtime core log
+    // panda::base_options::Options baseOptions("");
+    // baseOptions.SetLogLevel(LevelToString(level_));
+    // baseOptions.SetLogComponents({ "all" });
+    // panda::Logger::Initialize(baseOptions);
+    // panda::Logger::SetMobileLogPrintEntryPointByPtr(reinterpret_cast<void *>(Log::PrintLogger));
 }
 
 #ifdef ENABLE_ANLOG

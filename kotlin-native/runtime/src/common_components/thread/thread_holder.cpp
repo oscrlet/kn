@@ -77,6 +77,7 @@ void ThreadHolder::RegisterJSThread(JSThread *jsThread)
     DCHECK_CC(jsThread_ == nullptr);
     jsThread_ = jsThread;
     mutatorBase_->RegisterJSThread(jsThread);
+    // Adapt for ld.
     SynchronizeGCPhaseToJSThread(jsThread, mutatorBase_->GetMutatorPhase());
     TransferToNative();
 }

@@ -123,6 +123,7 @@ void MutatorBase::HandleJSGCCallback()
     if (mutator_ != nullptr) {
         void *vm = reinterpret_cast<Mutator*>(mutator_)->GetEcmaVMPtr();
         if (vm != nullptr) {
+            // Adapt for ld.
             JSGCCallback(vm);
         }
     }
@@ -225,6 +226,7 @@ void MutatorBase::TransitionToGCPhaseExclusive(GCPhase newPhase)
         // non-atomic, should update JSThread local gc state before SuspensionFlag store,
         // and SuspensionFlag load when transfer to running will guarantee the visibility of
         // the JSThread local gc state
+        // Adapt for ld.
         SynchronizeGCPhaseToJSThread(jsThread_, newPhase);
     }
     // Clear mutator's suspend request after phase transition

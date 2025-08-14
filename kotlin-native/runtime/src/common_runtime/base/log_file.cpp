@@ -56,7 +56,6 @@ void LogFile::Fini() { CloseLogFiles(); }
 
 void LogFile::SetFlags()
 {
-// 下面的宏涉及到panda，全部注释掉.
 // #ifndef NDEBUG
 //     logFile_[REPORT].enableLog = ARK_ENABLED_LOG(ARK_REPORT);
 //     logFile_[ALLOC].enableLog = ARK_ENABLED_LOG(ARK_LOG_ALLOC);
@@ -97,15 +96,15 @@ void LogFile::OpenLogFiles()
             if (GetEnv("ARK_LOG_STDOUT", 0) == 1) {
                 logFile_[i].file = fopen("/dev/stdout", "w");
                 if (logFile_[i].file == nullptr) {
-                    // LOG_COMMON(ERROR) << "LogFile::OpenLogFiles(): fail to set file /dev/stdout";
+                    // // LOG_COMMON(ERROR) << "LogFile::OpenLogFiles(): fail to set file /dev/stdout";
                     continue;
                 }
             } else {
                 CString fileName = dirName + "/" + dateDigit + "_" + pid + "." + LOG_TYPE_NAMES[i] + ".txt";
-                // LOG_COMMON(INFO) << "create log file " << fileName.Str();
+                // // LOG_COMMON(INFO) << "create log file " << fileName.Str();
                 logFile_[i].file = fopen(fileName.Str(), "a+"); // Assignment closes the old file.
                 if (logFile_[i].file == nullptr) {
-                    // LOG_COMMON(ERROR) << "LogFile::OpenLogFiles(): fail to open the file";
+                    // // LOG_COMMON(ERROR) << "LogFile::OpenLogFiles(): fail to open the file";
                     continue;
                 }
             }
@@ -281,7 +280,7 @@ Level InitLogLevel()
     CString logLevel = env.RemoveBlankSpace();
     if (logLevel.Length() != 1) {
         // LOG_COMMON(ERROR) << "Unsupported in ARK_LOG_LEVEL length. Valid length must be 1."
-        //            " Valid ARK_LOG_LEVEL must be in ['v', 'd', 'i', 'w', 'e', 'f' 's'].";
+         //           " Valid ARK_LOG_LEVEL must be in ['v', 'd', 'i', 'w', 'e', 'f' 's'].";
         return Level::ERROR;
     }
 

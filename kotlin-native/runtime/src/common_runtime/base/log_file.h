@@ -20,7 +20,9 @@
 
 #include "common_components/base/time_utils.h"
 
+// ld 适配代码
 #include "common_components/log/log_base.h"
+
 
 namespace common {
 enum LogType {

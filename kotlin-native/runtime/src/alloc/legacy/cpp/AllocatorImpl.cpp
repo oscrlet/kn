@@ -4,6 +4,7 @@
  */
 
 #include "AllocatorImpl.hpp"
+#include "common_components/heap/allocator/allocator.h"
 
 #include "ThreadData.hpp"
 
@@ -52,7 +53,15 @@ void alloc::Allocator::TraverseAllocatedExtraObjects(std::function<void(mm::Extr
     }
 }
 
-alloc::Allocator::Allocator() noexcept : impl_(std::make_unique<Impl>()) {}
+static common::Allocator* g_c_alloc = nullptr;
+alloc::Allocator::Allocator() noexcept : impl_(std::make_unique<Impl>()) {
+    RuntimeLogInfo({kTagGC}, "[Common RT]new alloc here");
+    // Need Init Common Runtime here.
+    g_c_alloc = common::Allocator::CreateAllocator();
+    // auto tmp = g_c_alloc->Allocate(128, common::AllocType::MOVEABLE_OBJECT);
+    // (void)tmp;
+    // RuntimeLogInfo({kTagGC}, "[Common RT]new alloc finish");
+}
 
 alloc::Allocator::~Allocator() = default;
 

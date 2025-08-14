@@ -19,7 +19,8 @@ class Initializer {
 public:
     Initializer()
     {
-        panda::trace::internal::DoInit();
+        // Adapt for ld.
+        // panda::trace::internal::DoInit();
     }
 
     virtual ~Initializer() = default;

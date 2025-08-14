@@ -23,10 +23,12 @@
 
 // Inline (disabled for DEBUG)
 #ifndef NDEBUG
+#if !defined(NDEBUG) && !defined(ALWAYS_INLINE)
 #define ALWAYS_INLINE // NOLINT(cppcoreguidelines-macro-usage)
 #else  // NDEBUG
 #define ALWAYS_INLINE __attribute__((always_inline)) // NOLINT(cppcoreguidelines-macro-usage)
 #endif  // !NDEBUG
+#endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NO_INLINE __attribute__((noinline))

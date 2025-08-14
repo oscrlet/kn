@@ -14,7 +14,7 @@
  */
 
 #include "debug.h"
-#include "os/thread.h"
+// #include "os/thread.h"
 #include "os/stacktrace.h"
 #include <iostream>
 #include <iomanip>
@@ -25,8 +25,9 @@ namespace panda::debug {
 {
     std::cerr << "ASSERTION FAILED: " << expr << std::endl;
     std::cerr << "IN " << file << ":" << std::dec << line << ": " << function << std::endl;
-    std::cerr << "Backtrace [tid=" << os::thread::GetCurrentThreadId() << "]:\n";
-    PrintStack(std::cerr);
+    // Adapt ld
+   // std::cerr << "Backtrace [tid=" << os::thread::GetCurrentThreadId() << "]:\n";
+   // PrintStack(std::cerr);
     std::abort();
 }
 

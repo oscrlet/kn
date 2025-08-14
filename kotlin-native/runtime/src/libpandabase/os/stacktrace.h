@@ -46,7 +46,9 @@ std::ostream &PrintStack(const std::vector<uintptr_t> &stacktrace, std::ostream 
 // NOLINTNEXTLINE(misc-definitions-in-headers)
 inline std::ostream &PrintStack(std::ostream &out)
 {
-    return PrintStack(GetStacktrace(), out);
+    // Adapt ld
+    // return PrintStack(GetStacktrace(), out);
+    return out;
 }
 
 }  // namespace panda
