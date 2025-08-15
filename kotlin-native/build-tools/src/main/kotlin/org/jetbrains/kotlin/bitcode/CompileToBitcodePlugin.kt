@@ -244,6 +244,11 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
                     SanitizerKind.ADDRESS -> listOf("-fsanitize=address")
                     SanitizerKind.THREAD -> listOf("-fsanitize=thread")
                 })
+                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src")
+                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/common_interfaces")
+                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/third_party_bounds_checking_function/include")
+                this.arguments.add("-I//Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/libpandabase")
+
                 this.headersDirs.from(this@SourceSet.headersDirs)
                 this.inputFiles.from(this@SourceSet.inputFiles.dir)
                 this.inputFiles.setIncludes(this@SourceSet.inputFiles.includes)

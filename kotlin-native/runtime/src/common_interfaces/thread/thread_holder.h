@@ -148,9 +148,10 @@ public:
         ThreadHolder *holder_ {nullptr};
     };
 
-    static constexpr size_t GetMutatorBaseOffset()
+    static size_t GetMutatorBaseOffset()
     {
-        return offsetof(ThreadHolder, mutatorBase_);
+        // return offsetof(ThreadHolder, mutatorBase_);
+        return reinterpret_cast<size_t>(&(reinterpret_cast<ThreadHolder*>(0)->mutatorBase_));
     }
 
 private:
