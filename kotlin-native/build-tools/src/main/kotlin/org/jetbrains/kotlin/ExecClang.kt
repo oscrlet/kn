@@ -108,11 +108,12 @@ abstract class ExecClang @Inject constructor(
     fun execKonanClang(target: String, action: Action<in ExecSpec>): ExecResult {
         val args = clangArgsForCppRuntime(target) + fixBrokenMacroExpansionInXcode15_3(target)
         val konanTarget = platformManager.targetManager(target).target
-        return if (konanTarget.family == Family.OHOS) {
-            this.execToolchainClang(konanTarget, args, action)
-        } else {
-            this.execClang(args, action)
-        }
+//        return if (konanTarget.family == Family.OHOS) {
+//            this.execToolchainClang(konanTarget, args, action)
+//        } else {
+//            this.execClang(args, action)
+//        }
+        return this.execClang(args, action)
     }
 
     // The toolchain ones execute clang from the toolchain.
