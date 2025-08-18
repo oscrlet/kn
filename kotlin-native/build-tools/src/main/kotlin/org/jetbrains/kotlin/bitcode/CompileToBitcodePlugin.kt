@@ -149,12 +149,12 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
 
     // TODO: These should be set by the plugin users.
     private val DEFAULT_CPP_FLAGS = listOfNotNull(
-          //  "-gdwarf-2".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.isNativeRuntimeDebugInfoEnabled", false) },
-          "-gdwarf-2",
+            "-gdwarf-2".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.isNativeRuntimeDebugInfoEnabled", false) },
+          //"-gdwarf-2",
             "-std=c++17",
             "-Werror",
-          //  "-O2",
-            "-O0",
+            "-O2",
+            //"-O0",
             "-fno-aligned-allocation", // TODO: Remove when all targets support aligned allocation in C++ runtime.
             "-Wall",
             "-Wextra",
@@ -244,6 +244,11 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
                     SanitizerKind.ADDRESS -> listOf("-fsanitize=address")
                     SanitizerKind.THREAD -> listOf("-fsanitize=thread")
                 })
+                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src")
+                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/common_interfaces")
+                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/third_party_bounds_checking_function/include")
+                this.arguments.add("-I//Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/libpandabase")
+
                 this.headersDirs.from(this@SourceSet.headersDirs)
                 this.inputFiles.from(this@SourceSet.inputFiles.dir)
                 this.inputFiles.setIncludes(this@SourceSet.inputFiles.includes)

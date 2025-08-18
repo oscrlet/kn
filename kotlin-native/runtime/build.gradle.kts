@@ -85,10 +85,10 @@ bitcode {
                 "-gdwarf-2",
                 "-Wall",
                 "-Wshadow",
-                "-Werror",
+                //"-Werror",
                 "-Wextra",
                 "-pedantic",
-                "-Wno-invalid-offsetof",
+               // "-Wno-invalid-offsetof",
                 "-Wno-gnu-statement-expression",
                 "-pipe",
                 "-Wdate-time",
@@ -113,7 +113,7 @@ bitcode {
                 //"-Wno-unused-but-set-variable",
             ))
         }
-
+        
         module("tests") {
             sourceSets{
                 main {
@@ -130,10 +130,10 @@ bitcode {
             compilerArgs.set(listOfNotNull(
                 "-Wall",
                 "-Wshadow",
-                "-Werror",
+               // "-Werror",
                 "-Wextra",
                 "-pedantic",
-                "-Wno-invalid-offsetof",
+               // "-Wno-invalid-offsetof",
                 "-Wno-gnu-statement-expression",
                 "-pipe",
                 "-Wdate-time",
@@ -177,10 +177,10 @@ bitcode {
             compilerArgs.set(listOfNotNull(
                 "-Wall",
                 "-Wshadow",
-                "-Werror",
+              //  "-Werror",
                 "-Wextra",
                 "-pedantic",
-                "-Wno-invalid-offsetof",
+              //  "-Wno-invalid-offsetof",
                 "-Wno-gnu-statement-expression",
                 "-pipe",
                 "-Wdate-time",
@@ -211,8 +211,7 @@ bitcode {
                 main {
                     inputFiles.from(srcRoot.dir("./"));
                     inputFiles.include("src/sprintf_s.c", "src/memmove_s.c", "src/memcpy_s.c", "src/vsprintf_s.c")
-                    inputFiles.exclude("**/tests/", "src/securecutil.c",
-                                       "src/secureprintoutput_a.c")
+                    inputFiles.exclude("**/tests/", "src/securecutil.c")
                     headersDirs.setFrom(srcRoot.dir("../"),
                     srcRoot.dir("./"), 
                     srcRoot.dir("../common_interfaces"), 
