@@ -244,10 +244,12 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
                     SanitizerKind.ADDRESS -> listOf("-fsanitize=address")
                     SanitizerKind.THREAD -> listOf("-fsanitize=thread")
                 })
-                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src")
-                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/common_interfaces")
-                this.arguments.add("-I/Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/third_party_bounds_checking_function/include")
-                this.arguments.add("-I//Users/chenraozhong/KMP/Code/CRT/kotlin/kotlin-native/runtime/src/libpandabase")
+                // 改为相对路径
+                val nativeRoot = project.rootProject.layout.projectDirectory.dir("kotlin-native")
+                this.arguments.add("-I${nativeRoot.dir("runtime/src").asFile.absolutePath}")
+                this.arguments.add("-I${nativeRoot.dir("runtime/src/common_interfaces").asFile.absolutePath}")
+                this.arguments.add("-I${nativeRoot.dir("runtime/src/third_party_bounds_checking_function/include").asFile.absolutePath}")
+                this.arguments.add("-I${nativeRoot.dir("runtime/src/libpandabase").asFile.absolutePath}")
 
                 this.headersDirs.from(this@SourceSet.headersDirs)
                 this.inputFiles.from(this@SourceSet.inputFiles.dir)
