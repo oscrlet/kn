@@ -366,7 +366,7 @@ bitcode {
                 testFixtures {}
             }
 
-            compilerArgs.add("-DCRT_ALLOCATOR")
+            compilerArgs.add("-DCMC")
         }
 
         module("custom_alloc") {

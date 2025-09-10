@@ -157,6 +157,7 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
             "-Wall",
             "-Wextra",
             "-Wno-unused-parameter",  // False positives with polymorphic functions.
+            "-DCMC",
     )
 
     private val allTestsTasks by lazy {

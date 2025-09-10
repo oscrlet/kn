@@ -21,12 +21,14 @@
 #include <cstdlib>
 #include <thread>
 
+#ifdef CMC
 #include "common_interfaces/base_runtime.h"
 #include "common_interfaces/thread/thread_holder.h"
 #include "common_interfaces/heap/heap_allocator.h"
 #include "common_components/heap/heap.h"
 #include "common_components/heap/allocator/region_desc.h"
 #include "common_components/common_runtime/base_runtime_param.h"
+#endif 
 
 using namespace kotlin;
 
@@ -93,9 +95,9 @@ std::atomic<GlobalRuntimeStatus> globalRuntimeStatus = kGlobalRuntimeUninitializ
 void Kotlin_deinitRuntimeCallback(void* argument);
 
 NO_INLINE RuntimeState* initRuntime() {
+#ifdef CMC
   // 在这里尝试初始化Common Runtime.             // 环境切换.
   // common::RuntimeParam param;
- //#ifdef CRT_ALLOCATOR
   common::RuntimeParam param = common::BaseRuntimeParam::DefaultRuntimeParam();
   // 关闭CMC GC.
   param.gcParam.enableGC = false;
@@ -109,7 +111,7 @@ NO_INLINE RuntimeState* initRuntime() {
   auto *holder_ = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
   auto *scope_ = new common::ThreadHolder::TryBindMutatorScope(holder_);
   (void)scope_;
-//#endif
+#endif
 
   SetKonanTerminateHandler();
   initObjectPool();
