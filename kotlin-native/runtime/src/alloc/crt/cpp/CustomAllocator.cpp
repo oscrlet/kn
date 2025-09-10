@@ -25,6 +25,12 @@
 #include "FixedBlockPage.hpp"
 #include "GCApi.hpp"
 
+#include "common_interfaces/base_runtime.h"
+#include "common_interfaces/thread/thread_holder.h"
+#include "common_interfaces/heap/heap_allocator.h"
+#include "common_components/heap/heap.h"
+#include "common_components/heap/allocator/region_desc.h"
+
 namespace kotlin::alloc {
 
 CustomAllocator::CustomAllocator(Heap& heap) noexcept : heap_(heap), nextFitPage_(nullptr), extraObjectPage_(nullptr) {
@@ -39,7 +45,11 @@ CustomAllocator::~CustomAllocator() {
 ALWAYS_INLINE ObjHeader* CustomAllocator::CreateObject(const TypeInfo* typeInfo) noexcept {
     RuntimeAssert(!typeInfo->IsArray(), "Must not be an array");
     auto descriptor = CustomHeapObject::descriptorFrom(typeInfo);
-    auto& heapObject = *descriptor.construct(Allocate(descriptor.size()));
+    // 在这里接入Common Runtime 的Allocate.
+    auto& heapObject = *descriptor.construct(reinterpret_cast<uint8_t*>(common::HeapAllocator::AllocateInOldOrHuge(descriptor.size(), common::LanguageType::DYNAMIC)));
+    // TODO: LanguageType:
+    
+    // auto& heapObject = *descriptor.construct(Allocate(descriptor.size()));
     ObjHeader* object = heapObject.object();
     if (typeInfo->flags_ & TF_HAS_FINALIZER) {
         auto* extraObject = CreateExtraObjectDataForObject(object, typeInfo);
@@ -56,10 +66,12 @@ ALWAYS_INLINE ArrayHeader* CustomAllocator::CreateArray(const TypeInfo* typeInfo
     CustomAllocDebug("CustomAllocator@%p::CreateArray(%d)", this ,count);
     RuntimeAssert(typeInfo->IsArray(), "Must be an array");
     auto descriptor = CustomHeapArray::descriptorFrom(typeInfo, count);
-    auto& heapArray = *descriptor.construct(Allocate(descriptor.size()));
+    auto& heapArray = *descriptor.construct(reinterpret_cast<uint8_t*>(common::HeapAllocator::AllocateInOldOrHuge(descriptor.size(), common::LanguageType::DYNAMIC)));
+    // auto& heapArray = *descriptor.construct(Allocate(descriptor.size()));
     ArrayHeader* array = heapArray.array();
     array->typeInfoOrMeta_ = const_cast<TypeInfo*>(typeInfo);
     array->count_ = count;
+    // printf("Run in CreateArray ptr: %p, size: %llu, count: %d\n",array, descriptor.size(), count);
     return array;
 }
 

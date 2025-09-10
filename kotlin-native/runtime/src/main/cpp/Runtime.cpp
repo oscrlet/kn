@@ -26,6 +26,7 @@
 #include "common_interfaces/heap/heap_allocator.h"
 #include "common_components/heap/heap.h"
 #include "common_components/heap/allocator/region_desc.h"
+#include "common_components/common_runtime/base_runtime_param.h"
 
 using namespace kotlin;
 
@@ -92,24 +93,23 @@ std::atomic<GlobalRuntimeStatus> globalRuntimeStatus = kGlobalRuntimeUninitializ
 void Kotlin_deinitRuntimeCallback(void* argument);
 
 NO_INLINE RuntimeState* initRuntime() {
-  // 在这里尝试初始化Common Runtime.
-  common::BaseRuntime::GetInstance()->Init();
+  // 在这里尝试初始化Common Runtime.             // 环境切换.
+  // common::RuntimeParam param;
+ //#ifdef CRT_ALLOCATOR
+  common::RuntimeParam param = common::BaseRuntimeParam::DefaultRuntimeParam();
+  // 关闭CMC GC.
+  param.gcParam.enableGC = false;
+  // 调整crt的gc阈值
+  // param.gcParam.gcInterval = 100000;
+  // param.gcParam.garbageThreshold = 0.1;
+  // param.gcParam.gcThreads = 1;
+  // param.gcParam.gcThreshold = 1;
+
+  common::BaseRuntime::GetInstance()->Init(param);
   auto *holder_ = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
   auto *scope_ = new common::ThreadHolder::TryBindMutatorScope(holder_);
   (void)scope_;
-  // 在这里尝试进行内存分配.
-  uintptr_t addr = common::HeapAllocator::AllocateInHuge(common::Heap::NORMAL_UNIT_SIZE, common::LanguageType::DYNAMIC);
-  if (addr > 0) {
-    RuntimeLogInfo({kTagGC}, "[Common RT] The addr > 0.");
-    common::RegionDesc* region = common::RegionDesc::GetAliveRegionDescAt(addr);
-    if (region->IsLargeRegion()) {
-         RuntimeLogInfo({kTagGC}, "[Common RT] The region is LargeRegion.");
-    } else {
-         RuntimeLogInfo({kTagGC}, "[Common RT] The region is not LargeRegion");
-    }
-  } else {
-    RuntimeLogInfo({kTagGC}, "[Common RT] The addr < 0.");
-  }
+//#endif
 
   SetKonanTerminateHandler();
   initObjectPool();

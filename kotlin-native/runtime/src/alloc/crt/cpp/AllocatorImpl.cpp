@@ -8,6 +8,8 @@
 #include "GCApi.hpp"
 #include "Heap.hpp"
 
+#include "Types.h"
+
 using namespace kotlin;
 
 alloc::Allocator::ThreadData::ThreadData(Allocator& allocator) noexcept : impl_(std::make_unique<Impl>(allocator.impl())) {}
