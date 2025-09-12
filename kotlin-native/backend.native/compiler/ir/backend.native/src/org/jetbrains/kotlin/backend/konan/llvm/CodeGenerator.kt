@@ -513,9 +513,9 @@ internal class StackLocalsManagerImpl(
                 if (fieldSymbol.owner.type.binaryTypeIsReference()) {
                     val fieldPtr = structGep(type, stackLocal.stackAllocationPtr, fieldIndex, "")
                     if (refsOnly)
-                        storeHeapRef(kNullObjHeaderPtr, fieldPtr)
+                        storeHeapRef(kNullObjHeaderPtr, fieldPtr, stackLocal.stackAllocationPtr)
                     else
-                        call(llvm.zeroHeapRefFunction, listOf(fieldPtr))
+                        call(llvm.zeroHeapRefFunction, listOf(fieldPtr, stackLocal.stackAllocationPtr))
                 }
             }
 
@@ -717,8 +717,12 @@ internal abstract class FunctionGenerationContext(
             resultSlot: LLVMValueRef? = null,
             name: String = "",
             memoryOrder: LLVMAtomicOrdering? = null,
-            alignment: Int? = null
+            alignment: Int? = null,
+            thisPtr: LLVMValueRef = codegen.kNullObjHeaderPtr
     ): LLVMValueRef {
+        if (isObjectType && thisPtr != codegen.kNullObjHeaderPtr) {
+            call(llvm.readHeapRefFunction, listOf(address, thisPtr))
+        }
         val value = LLVMBuildLoad2(builder, type, address, name)!!
         memoryOrder?.let { LLVMSetOrdering(value, it) }
         alignment?.let { LLVMSetAlignment(value, it) }
@@ -735,17 +739,18 @@ internal abstract class FunctionGenerationContext(
         alignment?.let { LLVMSetAlignment(store, it) }
     }
 
-    fun storeHeapRef(value: LLVMValueRef, ptr: LLVMValueRef) {
-        updateRef(value, ptr, onStack = false)
+    fun storeHeapRef(value: LLVMValueRef, ptr: LLVMValueRef, thisPtr: LLVMValueRef = codegen.kNullObjHeaderPtr) {
+        updateRef(value, ptr, onStack = false, thisPtr = thisPtr)
     }
 
     fun storeStackRef(value: LLVMValueRef, ptr: LLVMValueRef) {
         updateRef(value, ptr, onStack = true)
     }
 
-    fun storeAny(value: LLVMValueRef, ptr: LLVMValueRef, isObjectRef: Boolean, onStack: Boolean, isVolatile: Boolean = false, alignment: Int? = null) {
+    fun storeAny(value: LLVMValueRef, ptr: LLVMValueRef, isObjectRef: Boolean,
+        onStack: Boolean, isVolatile: Boolean = false, alignment: Int? = null, thisPtr: LLVMValueRef = codegen.kNullObjHeaderPtr) {
         when {
-            isObjectRef -> updateRef(value, ptr, onStack, isVolatile, alignment)
+            isObjectRef -> updateRef(value, ptr, onStack, isVolatile, alignment, thisPtr = thisPtr)
             else -> store(value, ptr, if (isVolatile) LLVMAtomicOrdering.LLVMAtomicOrderingSequentiallyConsistent else null, alignment)
         }
     }
@@ -755,16 +760,16 @@ internal abstract class FunctionGenerationContext(
     }
 
     private fun updateRef(value: LLVMValueRef, address: LLVMValueRef, onStack: Boolean,
-                          isVolatile: Boolean = false, alignment: Int? = null) {
+                          isVolatile: Boolean = false, alignment: Int? = null, thisPtr: LLVMValueRef = codegen.kNullObjHeaderPtr) {
         require(alignment == null || alignment % runtime.pointerAlignment == 0)
         if (onStack) {
             require(!isVolatile) { "Stack ref update can't be volatile"}
             call(llvm.updateStackRefFunction, listOf(address, value))
         } else {
-            if (isVolatile) {
-                call(llvm.UpdateVolatileHeapRef, listOf(address, value))
+            if (isVolatile && context.memoryModel == MemoryModel.EXPERIMENTAL) {
+                call(llvm.UpdateVolatileHeapRef, listOf(address, value, thisPtr))
             } else {
-                call(llvm.updateHeapRefFunction, listOf(address, value))
+                call(llvm.updateHeapRefFunction, listOf(address, value, thisPtr))
             }
         }
     }

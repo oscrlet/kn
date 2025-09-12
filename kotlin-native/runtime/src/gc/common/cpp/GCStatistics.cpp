@@ -238,7 +238,7 @@ void GCHandle::finished() {
         }
         if (auto stats = stat->sweepStats.extra) {
             GCLogInfo(
-                    epoch_, "Sweep extra objects: swept %" PRIu64 " objects, kept %" PRIu64 " objects",
+                    epoch_, "yhm Sweep extra objects: swept %" PRIu64 " objects, kept %" PRIu64 " objects",
                     stats->sweptCount, stats->keptCount);
         }
         if (auto stats = stat->sweepStats.heap) {

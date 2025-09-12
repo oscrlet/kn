@@ -125,7 +125,7 @@ internal fun <C : PhaseContext> PhaseEngine<C>.runBackend(backendContext: Contex
                     compileAndLink(moduleCompilationOutput, outputFiles.mainFileName, outputFiles, tempFiles)
                 }
             } finally {
-                tempFiles.dispose()
+                // tempFiles.dispose()
                 fragment.performanceManager?.notifyIRGenerationFinished()
             }
         }

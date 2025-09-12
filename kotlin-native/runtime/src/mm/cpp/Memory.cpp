@@ -4,6 +4,7 @@
  */
 
 #include "Memory.h"
+#include <cstdio>
 #include "MemoryPrivate.hpp"
 
 #include "Allocator.hpp"
@@ -29,6 +30,7 @@
 #include "MemoryDump.hpp"
 
 #include "alloc/crt/cpp/hooks.h"
+#include "common_interfaces/base_runtime.h"
 
 using namespace kotlin;
 
@@ -136,7 +138,23 @@ extern "C" RUNTIME_NOTHROW void InitAndRegisterGlobal(ObjHeader** location, cons
     }
 }
 
-extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void ZeroHeapRef(ObjHeader** location) {
+extern "C" const MemoryModel CurrentMemoryModel = MemoryModel::kExperimental;
+
+
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
+    if (thisPtr) {
+        printf("loaded location %ld of type %s in %ld with type %s\n", (long)location, (*location)->type_info()->fqName().c_str(),
+               (long)thisPtr, thisPtr->type_info()->fqName().c_str());
+    }
+    common::BaseRuntime::ReadBarrier(thisPtr, location);
+}
+
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ZeroHeapRef(ObjHeader** location, ObjHeader *thisPtr) {
+    if (thisPtr) {
+        printf("stored location %ld of type %s in %ld with type %s\n", (long)location, (*location)->type_info()->fqName().c_str(),
+               (long)thisPtr, thisPtr->type_info()->fqName().c_str());
+        common::BaseRuntime::WriteBarrier(thisPtr, location, nullptr);
+    }
     mm::RefAccessor<false>{location} = nullptr;
 }
 
@@ -155,11 +173,21 @@ extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateStackRef(ObjHeader** lo
     mm::StackRefAccessor{location} = const_cast<ObjHeader*>(object);
 }
 
-extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateHeapRef(ObjHeader** location, const ObjHeader* object) {
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void UpdateHeapRef(ObjHeader** location, const ObjHeader* object, ObjHeader* thisPtr) {
+    if (thisPtr) {
+        printf("stored location %ld of type %s in %ld with type %s\n", (long)location, (object)->type_info()->fqName().c_str(),
+               (long)thisPtr, thisPtr->type_info()->fqName().c_str());
+        common::BaseRuntime::WriteBarrier(thisPtr, location, const_cast<ObjHeader*>(object));
+    }
     mm::RefAccessor<false>{location} = const_cast<ObjHeader*>(object);
 }
 
-extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateVolatileHeapRef(ObjHeader** location, const ObjHeader* object) {
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void UpdateVolatileHeapRef(ObjHeader** location, const ObjHeader* object, ObjHeader* thisPtr) {
+    if (thisPtr) {
+        printf("stored location %ld of type %s in %ld with type %s\n", (long)location, (*location)->type_info()->fqName().c_str(),
+               (long)thisPtr, thisPtr->type_info()->fqName().c_str());
+        common::BaseRuntime::WriteBarrier(thisPtr, location, const_cast<ObjHeader*>(object));
+    }
     mm::RefAccessor<false>{location}.storeAtomic(const_cast<ObjHeader*>(object), std::memory_order_seq_cst);
 }
 
@@ -509,3 +537,4 @@ void kotlin::initObjectPool() noexcept {
 void kotlin::compactObjectPoolInCurrentThread() noexcept {
     alloc::compactObjectPoolInCurrentThread();
 }
+
