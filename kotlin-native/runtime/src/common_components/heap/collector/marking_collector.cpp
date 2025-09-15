@@ -741,15 +741,14 @@ void MarkingCollector::ReclaimGarbageMemory(GCReason reason)
 
 void MarkingCollector::RunGarbageCollection(uint64_t gcIndex, GCReason reason, GCType gcType)
 {
-    reinterpret_cast<RegionSpace&>(Heap::GetHeap().GetAllocator()).DumpAllRegionSummary("Start GC ");
     gcReason_ = reason;
 
     // TODO:
-    gcReason_ = GCReason::GC_REASON_HEU;
+    // gcReason_ = GCReason::GC_REASON_HEU;
     gcType_ = gcType;
-    gcType_ = GCType::GC_TYPE_FULL;
+    // gcType_ = GCType::GC_TYPE_FULL;
 
-    auto gcReasonName = std::string(g_gcRequests[gcReason_].name);
+    auto gcReasonName = std::string(g_gcRequests[reason].name);
     auto currentAllocatedSize = Heap::GetHeap().GetAllocatedSize();
     auto currentThreshold = Heap::GetHeap().GetCollector().GetGCStats().GetThreshold();
     VLOG(INFO, "Begin GC log. GCReason: %s, GCType: %s, Current allocated %s, Current threshold %s, gcIndex=%llu",
@@ -807,8 +806,6 @@ void MarkingCollector::RunGarbageCollection(uint64_t gcIndex, GCReason reason, G
     }
 
     UpdateGCStats();
-
-    reinterpret_cast<RegionSpace&>(Heap::GetHeap().GetAllocator()).DumpAllRegionSummary("After GC ");
 
     if (Heap::GetHeap().GetForceThrowOOM()) {
         Heap::throwOOM();

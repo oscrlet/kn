@@ -772,8 +772,6 @@ void ArkCollector::DoGarbageCollection()
     {
         ScopedStopTheWorld stw(stwParam);
 
-        reinterpret_cast<RegionSpace&>(Heap::GetHeap().GetAllocator()).DumpAllRegionSummary("Start GC");
-
         auto collectedRoots = EnumRoots<EnumRootsPolicy::NO_STW_AND_NO_FLIP_MUTATOR>();
         MarkingHeap(collectedRoots);
 
@@ -841,7 +839,6 @@ void ArkCollector::DoGarbageCollection()
         if (isNotYoungGC) {
             CollectPinnedGarbage();
         }
-        reinterpret_cast<RegionSpace&>(Heap::GetHeap().GetAllocator()).DumpAllRegionSummary("After GC");
         TransitionToGCPhase(GCPhase::GC_PHASE_IDLE, true);
         ClearAllGCInfo();
         CollectSmallSpace();

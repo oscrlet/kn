@@ -3,6 +3,8 @@
  * that can be found in the LICENSE file.
  */
 
+#include "base/common.h"
+#include "common_components/log/log_base.h"
 #include "std_support/Atomic.hpp"
 #include "Cleaner.h"
 #include "CompilerConstants.hpp"
@@ -16,9 +18,11 @@
 #include "RuntimePrivate.hpp"
 #include "Worker.h"
 #include "KString.h"
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 #include <thread>
 
 #ifdef CMC
@@ -93,6 +97,48 @@ enum GlobalRuntimeStatus {
 
 std::atomic<GlobalRuntimeStatus> globalRuntimeStatus = kGlobalRuntimeUninitialized;
 
+std::map<std::string, Level> logLevels = {
+    {"debug", Level::DEBUG},
+    {"info", Level::INFO},
+    {"fatal", Level::FATAL},
+    {"fatal_without_abort", Level::FATAL_WITHOUT_ABORT},
+    {"verbose", Level::VERBOSE},
+    {"warn", Level::WARN},
+    {"error", Level::ERROR},
+};
+
+inline static void InitLog() {
+  const char* env = std::getenv("CRT_LOG_LEVEL");
+  std::string logLevelStr = env != nullptr ? std::string(env) : "error";
+  std::transform(logLevelStr.begin(), logLevelStr.end(), logLevelStr.begin(), ::tolower);
+  common::LogOptions options = {
+    .level = logLevels[std::string(env != nullptr ? env : "error")],
+    .component = static_cast<ComponentMark>(Component::ALL),
+  };
+  common::Log::Initialize(options);
+}
+
+std::map<std::string, Level> logLevels = {
+    {"debug", Level::DEBUG},
+    {"info", Level::INFO},
+    {"fatal", Level::FATAL},
+    {"fatal_without_abort", Level::FATAL_WITHOUT_ABORT},
+    {"verbose", Level::VERBOSE},
+    {"warn", Level::WARN},
+    {"error", Level::ERROR},
+};
+
+inline static void InitLog() {
+  const char* env = std::getenv("CRT_LOG_LEVEL");
+  std::string logLevelStr = env != nullptr ? std::string(env) : "error";
+  std::transform(logLevelStr.begin(), logLevelStr.end(), logLevelStr.begin(), ::tolower);
+  common::LogOptions options = {
+    .level = logLevels[std::string(env != nullptr ? env : "error")],
+    .component = static_cast<ComponentMark>(Component::ALL),
+  };
+  common::Log::Initialize(options);
+}
+
 void Kotlin_deinitRuntimeCallback(void* argument);
 
 NO_INLINE RuntimeState* initRuntime() {
@@ -109,6 +155,7 @@ NO_INLINE RuntimeState* initRuntime() {
   // param.gcParam.gcThreshold = 1;
   printf("Run in initRuntime\n");
   common::BaseRuntime::GetInstance()->Init(param);
+  InitLog();
   auto *holder_ = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
   auto *scope_ = new common::ThreadHolder::TryBindMutatorScope(holder_);
   (void)scope_;
