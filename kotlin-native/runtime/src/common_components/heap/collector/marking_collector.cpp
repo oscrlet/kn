@@ -768,8 +768,8 @@ void MarkingCollector::RunGarbageCollection(uint64_t gcIndex, GCReason reason, G
     // this may be removed in the future.
     ScopedSTWLock stwLock;
     PreGarbageCollection(true);
-    // Heap::GetHeap().SetGCReason(reason);
-    Heap::GetHeap().SetGCReason(gcReason_);
+    Heap::GetHeap().SetGCReason(reason);
+    // Heap::GetHeap().SetGCReason(gcReason_);
     GCStats& gcStats = GetGCStats();
 
     DoGarbageCollection();

@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <errno.h>
+// #include "base/globals.h"
 
 namespace common {
 class RegionRSet {
@@ -88,9 +89,26 @@ public:
             }
         }
     }
+
+    void Dump() const
+    {
+        printf("RegionRSet Dump:\n");
+        printf("  Card count: %zu\n", cardCnt_);
+        const CardElement* cardTable = GetCardTable();
+        for (size_t i = 0; i < cardCnt_; ++i) {
+            printf("  Card[%4zu]: 0x%016llx | ", i, (unsigned long long)cardTable[i]);
+            // Bitwise visualization for each bit in the word
+            for (int bit = 0; bit < 64; ++bit) {
+                bool marked = (cardTable[i] & (1ULL << bit)) != 0;
+                printf("%c", marked ? 'X' : '.');
+            }
+            printf("\n");
+        }
+    }
 private:
     explicit RegionRSet(size_t cardCnt) : cardCnt_(cardCnt) {}
-    ~RegionRSet() = default;
+    ~RegionRSet() {
+    }
 
     CardElement *GetCardTable() const
     {

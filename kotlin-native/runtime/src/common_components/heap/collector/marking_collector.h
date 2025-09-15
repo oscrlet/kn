@@ -233,7 +233,6 @@ public:
 
     void TransitionToGCPhase(const GCPhase phase, const bool)
     {
-       //  printf("The gcPhase is %d\n", phase);
         MutatorManager::Instance().TransitionAllMutatorsToGCPhase(phase);
     }
 

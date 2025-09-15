@@ -63,7 +63,6 @@ public:
     void SetForwardingPointerAfterExclusive(BaseObject *object, BaseObject *fwdPtr) override {
         reinterpret_cast<KNBaseObject*>(object)->SetForwardingPointerAfterExclusive(fwdPtr);
     }
-
     virtual ~KNBaseObjectOperator() = default;
 };
 

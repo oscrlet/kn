@@ -22,8 +22,8 @@ namespace common {
 
 void FixHeapWorker::CollectFixHeapTasks(FixHeapTaskList &taskList, RegionList &list, FixRegionType type)
 {
-    list.VisitAllRegions([&taskList, type](RegionDesc *region) { 
-        taskList.emplace_back(region, type); 
+    list.VisitAllRegions([&taskList, type](RegionDesc *region) {
+        taskList.emplace_back(region, type);
     });
 }
 

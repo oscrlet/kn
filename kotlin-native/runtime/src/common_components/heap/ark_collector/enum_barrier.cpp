@@ -58,8 +58,8 @@ void EnumBarrier::WriteRefField(BaseObject* obj, RefField<false>& field, BaseObj
     }
     DLOG(BARRIER, "write obj %p ref@%p: 0x%zx -> %p", obj, &field, remeberedObject, ref);
     std::atomic_thread_fence(std::memory_order_seq_cst);
-    RefField<> newField(ref);
-    field.SetFieldValue(newField.GetFieldValue());
+    // RefField<> newField(ref);
+    // field.SetFieldValue(newField.GetFieldValue());
 }
 #ifdef ARK_USE_SATB_BARRIER
 void EnumBarrier::WriteBarrier(BaseObject* obj, RefField<false>& field, BaseObject* ref) const

@@ -141,19 +141,37 @@ extern "C" RUNTIME_NOTHROW void InitAndRegisterGlobal(ObjHeader** location, cons
 extern "C" const MemoryModel CurrentMemoryModel = MemoryModel::kExperimental;
 
 
-extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
-    if (thisPtr) {
-        printf("loaded location %ld of type %s in %ld with type %s\n", (long)location, (*location)->type_info()->fqName().c_str(),
-               (long)thisPtr, thisPtr->type_info()->fqName().c_str());
+static void DumpHeapRef(ObjHeader** location, ObjHeader* thisPtr, const char* action) {
+    if (true) {
+        return;
     }
-    common::BaseRuntime::ReadBarrier(thisPtr, location);
+    printf("%s location %ld ", action, (long)location);
+
+    if (*location == nullptr) {
+        printf("to empty ");
+    } else {
+        printf("of type %s ", (*location)->type_info()->fqName().c_str());
+    }
+    if (thisPtr) {
+        printf("in %ld with type %s\n", (long)thisPtr, thisPtr->type_info()->fqName().c_str());
+    }
+}
+
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
+    DumpHeapRef(location, thisPtr, "loaded");
+    if (thisPtr) {
+        common::BaseRuntime::ReadBarrier(thisPtr, location);
+    } else {
+        common::BaseRuntime::ReadBarrier(location);
+    }
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ZeroHeapRef(ObjHeader** location, ObjHeader *thisPtr) {
+    DumpHeapRef(location, thisPtr, "cleared");
     if (thisPtr) {
-        printf("stored location %ld of type %s in %ld with type %s\n", (long)location, (*location)->type_info()->fqName().c_str(),
-               (long)thisPtr, thisPtr->type_info()->fqName().c_str());
         common::BaseRuntime::WriteBarrier(thisPtr, location, nullptr);
+    } else {
+        common::BaseRuntime::WriteStaticRef(location, nullptr);
     }
     mm::RefAccessor<false>{location} = nullptr;
 }
@@ -174,19 +192,21 @@ extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateStackRef(ObjHeader** lo
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void UpdateHeapRef(ObjHeader** location, const ObjHeader* object, ObjHeader* thisPtr) {
+    DumpHeapRef(location, thisPtr, "stored");
     if (thisPtr) {
-        printf("stored location %ld of type %s in %ld with type %s\n", (long)location, (object)->type_info()->fqName().c_str(),
-               (long)thisPtr, thisPtr->type_info()->fqName().c_str());
         common::BaseRuntime::WriteBarrier(thisPtr, location, const_cast<ObjHeader*>(object));
+    } else {
+        common::BaseRuntime::WriteStaticRef(location, const_cast<ObjHeader*>(object));
     }
     mm::RefAccessor<false>{location} = const_cast<ObjHeader*>(object);
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void UpdateVolatileHeapRef(ObjHeader** location, const ObjHeader* object, ObjHeader* thisPtr) {
+    DumpHeapRef(location, thisPtr, "stored volatile");
     if (thisPtr) {
-        printf("stored location %ld of type %s in %ld with type %s\n", (long)location, (*location)->type_info()->fqName().c_str(),
-               (long)thisPtr, thisPtr->type_info()->fqName().c_str());
         common::BaseRuntime::WriteBarrier(thisPtr, location, const_cast<ObjHeader*>(object));
+    } else {
+        common::BaseRuntime::WriteStaticRef(location, const_cast<ObjHeader*>(object));
     }
     mm::RefAccessor<false>{location}.storeAtomic(const_cast<ObjHeader*>(object), std::memory_order_seq_cst);
 }
