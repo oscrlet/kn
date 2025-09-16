@@ -82,13 +82,18 @@ size_t alloc::crtAllocatedHeapSize(ObjHeader* object) noexcept {
    if (objHeader->typeInfoOrMeta_->IsArray()) {
        const ArrayHeader* arrayHeader = objHeader->array();
        auto count = arrayHeader->count_;
+#ifdef BYTE_DANCE
+// ByteDance KMP对于String类型做了特殊操作，会导致String-TypeInfo size比实际分配的size少1一个字节
        if (arrayHeader->type_info()== theStringTypeInfo) {
             auto descriptor = kotlin::alloc::CustomHeapArray::descriptorFrom(arrayHeader->typeInfoOrMeta_, count + 1);
             return descriptor.size();
        } else {
+#endif
             auto descriptor = kotlin::alloc::CustomHeapArray::descriptorFrom(arrayHeader->typeInfoOrMeta_, count);
             return descriptor.size();
+#ifdef BYTE_DANCE
        }
+#endif
        // auto tmpSize = kotlin::alloc::CustomHeapArray::descriptorFrom(arrayHeader->typeInfoOrMeta_, count + 1).size();
        // printf("Run in GetAllocSize ptr: %p, size: %llu, count: %d, tmpSize: %llu\n", object, descriptor.size(), count, tmpSize);
    } else {
