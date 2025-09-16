@@ -84,10 +84,9 @@ public:
     {
         return currentCollector_->GetAndTryTagRefField(obj);
     }
-    
+
     void PushBackAllocateAddr(const BaseObject* obj) override {}
     bool IsInAllocateAddr(const BaseObject* obj) override {}
-    void UpdateAllocateAddr() override {}
 
 private:
     // supported collector set

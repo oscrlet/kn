@@ -24,6 +24,7 @@
 #include "Memory.h"
 #include "FixedBlockPage.hpp"
 #include "GCApi.hpp"
+#include "hooks.h"
 
 #include "common_interfaces/base_runtime.h"
 #include "common_interfaces/thread/thread_holder.h"
@@ -57,6 +58,7 @@ ALWAYS_INLINE ObjHeader* CustomAllocator::CreateObject(const TypeInfo* typeInfo)
     } else {
         object->typeInfoOrMeta_ = const_cast<TypeInfo*>(typeInfo);
     }
+    reinterpret_cast<common::KNBaseObject *>(object)->SetValid(true);
     return object;
 }
 
@@ -69,7 +71,7 @@ ALWAYS_INLINE ArrayHeader* CustomAllocator::CreateArray(const TypeInfo* typeInfo
     ArrayHeader* array = heapArray.array();
     array->typeInfoOrMeta_ = const_cast<TypeInfo*>(typeInfo);
     array->count_ = count;
-    // printf("Run in CreateArray ptr: %p, size: %llu, count: %d\n",array, descriptor.size(), count);
+    reinterpret_cast<common::KNBaseObject *>(array)->SetValid(true);
     return array;
 }
 

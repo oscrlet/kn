@@ -16,6 +16,7 @@
 #include "hooks.h"
 
 #include "common_components/common_runtime/hooks.h"
+#include "common_components/heap/collector/collector.h"
 #include "common_interfaces/objects/base_object.h"
 #include "common_components/heap/heap.h"
 
@@ -57,21 +58,10 @@ bool is_valid_pointer(const void* addr) {
     return false;
 }
 
-bool IsValidObject(const ObjHeader* obj) {
-    auto &collector = common::Heap::GetHeap().GetCollector();
-    if (!collector.IsInAllocateAddr(reinterpret_cast<const common::BaseObject*>(obj))) {
-        return false;
-    }
-    // TODO: 下面这个判断可以尝试删除
-    if (!common::Heap::IsHeapAddress(obj)) {
-        return false;
-    }
-    return true;
-}
-
 bool collectRoot(const common::RefFieldVisitor &visitorFunc, ObjHeader* &object) noexcept {
-    if (!IsValidObject(object))
+    if (!common::Heap::IsHeapAddress(object) || !reinterpret_cast<common::BaseObject* >(object)->IsValidObject()) {
         return false;
+    }
     if (object->heap()) {
         visitorFunc(reinterpret_cast<common::RefField<>&>(object));
     } else {
@@ -129,7 +119,7 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
     auto rootSet = kotlin::mm::ThreadRootSet(thread);
         // printf frames.
     // printf("Print Frames before collectRoots:\n");
-    int frameSize = 100;
+    uintptr_t frameSize = 50;
     FrameOverlay *currentFrame = rootSet.stack_.currentFrame_;
     //PrintFrame(thread, frameSize);
     // uintptr_t fpStart = 0;
@@ -172,23 +162,27 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
     // 加 50
     // printf("Print Frames during colllectRoots:\n");
     currentFrame = rootSet.stack_.currentFrame_;
+    uintptr_t minFrame = currentFrame ? reinterpret_cast<uintptr_t>(currentFrame) : UINTPTR_MAX;
+    uintptr_t maxFrame = currentFrame ? reinterpret_cast<uintptr_t>(currentFrame) : 0;
     while(currentFrame != nullptr) {
-     //   printf("*******************\n");
-        for(int i = 0; i < frameSize; i++) {
-            // printf("%p ", *(reinterpret_cast<ObjHeader**>(currentFrame) + i));
-            ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(currentFrame) + i);
-       //     printf("%p ", *tmpObj);
-            collectRoot(visitorFunc, *tmpObj);
+        if ((uintptr_t)currentFrame - frameSize <= reinterpret_cast<uintptr_t>(minFrame)) {
+            for(auto i = (uintptr_t)currentFrame - frameSize; i <= (uintptr_t)minFrame; i++) {
+                ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(i));
+                collectRoot(visitorFunc, *tmpObj);
+            }
+            minFrame = reinterpret_cast<uintptr_t>(currentFrame) - frameSize;
         }
-        for(int i = 0; i < frameSize; i++) {
-            // printf("%p ", *(reinterpret_cast<ObjHeader**>(currentFrame) + i));
-            ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(currentFrame) - i);
-         //   printf("%p ", *tmpObj);
-            collectRoot(visitorFunc, *tmpObj);
+        if ((uintptr_t)currentFrame + frameSize >= reinterpret_cast<uintptr_t>(maxFrame)) {
+            for(auto i = (uintptr_t)maxFrame; i <= (uintptr_t)currentFrame + frameSize; i++) {
+                ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(i));
+                collectRoot(visitorFunc, *tmpObj);
+            }
+            maxFrame = reinterpret_cast<uintptr_t>(currentFrame) + frameSize;
         }
-        // printf("\n");
         currentFrame = currentFrame->previous;
     }
+
+    print("[GC DEBUG] collectRootSetForThread time: %lld ns\n", common::TimeUtil::NanoSeconds() - common::start);
     //printf("Print Frames after collectRoots:\n");
     //PrintFrame(thread, frameSize);
 }

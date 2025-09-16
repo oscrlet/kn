@@ -160,17 +160,6 @@ public:
         return allocateAddrSet.find(obj) != allocateAddrSet.end();
     }
 
-    void UpdateAllocateAddr() {
-        // TODO: 会存在存活但是不copy的情况
-        std::unordered_set<const BaseObject *> updateAllocateAddrSet;
-        for (auto item : allocateAddrSet) {
-            if (auto fwdPtr = item->GetForwardingPointer()) {
-                updateAllocateAddrSet.insert(fwdPtr);
-            }
-        }
-        allocateAddrSet = updateAllocateAddrSet;
-    }
-
 protected:
     void CollectLargeGarbage()
     {

@@ -40,8 +40,6 @@ Address HeapAllocator::AllocateInYoungOrHuge(size_t size, LanguageType language)
 {
     auto address = HeapManager::Allocate(size);
     BaseObject::Cast(address)->SetLanguageType(language);
-    auto &collector = Heap::GetHeap().GetCollector();
-    collector.PushBackAllocateAddr(BaseObject::Cast(address));
     return address;
 }
 
