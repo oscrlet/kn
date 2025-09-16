@@ -28,6 +28,8 @@
 #include "Utils.hpp"
 #include "MemoryDump.hpp"
 
+#include "alloc/crt/cpp/hooks.h"
+
 using namespace kotlin;
 
 #ifdef KONAN_OBJC_INTEROP
@@ -452,14 +454,22 @@ bool kotlin::FinalizersThreadIsRunning() noexcept {
     return mm::GlobalData::Instance().gc().FinalizersThreadIsRunning();
 }
 
-RUNTIME_NOTHROW extern "C" void Kotlin_processObjectInMark(void* state, ObjHeader* object) {
-    gc::GC::processObjectInMark(state, object);
+RUNTIME_NOTHROW ALWAYS_INLINE extern "C" void Kotlin_processObjectInMark(void* state, ObjHeader* object) {
+// #ifndef CRT_ALLOCATOR
+//     gc::GC::processObjectInMark(state, object);
+// #else
+    common::processObjectInMark(state, object);
+// #endif
 }
 
-RUNTIME_NOTHROW extern "C" void Kotlin_processArrayInMark(void* state, ObjHeader* object) {
-    gc::GC::processArrayInMark(state, object->array());
+RUNTIME_NOTHROW ALWAYS_INLINE extern "C" void Kotlin_processArrayInMark(void* state, ObjHeader* object) {
+// #ifndef CRT_ALLOCATOR
+    // gc::GC::processArrayInMark(state, object->array());
+// #else
+    // 这里需要看一下如何把逻辑剥离出来.
+    common::processArrayInMark(state, object->array());
+// #endif
 }
-
 RUNTIME_NOTHROW extern "C" void Kotlin_processEmptyObjectInMark(void* state, ObjHeader* object) {
     // Empty object. Nothing to do.
     // TODO: Try to generate it in the code generator.

@@ -99,6 +99,11 @@ public:
         return obj;
     };
 
+    virtual void PushBackAllocateAddr(const BaseObject* obj) = 0;
+    virtual bool IsInAllocateAddr(const BaseObject* obj) = 0;
+    virtual void UpdateAllocateAddr() = 0;
+
+
 protected:
     virtual void RequestGCInternal(GCReason, bool, GCType)
     {

@@ -311,7 +311,7 @@ private:
     // Indicate the current mutator phase and use which barrier in concurrent gc
     std::atomic<GCPhase> mutatorPhase_ = { GCPhase::GC_PHASE_UNDEF };
     // in saferegion, it will not access any managed objects and can be visitted by observer
-    std::atomic<uint32_t> inSaferegion_ = { SAFE_REGION_TRUE };
+    std::atomic<uint32_t> inSaferegion_ = { SAFE_REGION_FALSE };
     // Protect observerCnt
     std::mutex observeCntMutex_;
     // Increase when this mutator is observed by some observer

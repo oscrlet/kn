@@ -19,6 +19,8 @@
 #include "Utils.hpp"
 #include "ThreadSuspension.hpp"
 
+#include "common_interfaces/thread/thread_holder.h"
+
 struct ObjHeader;
 
 namespace kotlin {
@@ -35,7 +37,8 @@ public:
         gcScheduler_(GlobalData::Instance().gcScheduler(), *this),
         allocator_(GlobalData::Instance().allocator()),
         gc_(GlobalData::Instance().gc(), *this),
-        suspensionData_(ThreadState::kNative, *this) {}
+        suspensionData_(ThreadState::kNative, *this),
+        currentThreadHolder(common::ThreadHolder::GetCurrent()) {}  // TODO: ThreadData是一个Heap对象，需要再看一下。
 
     ~ThreadData() = default;
 
@@ -63,6 +66,22 @@ public:
 
     ThreadSuspensionData& suspensionData() { return suspensionData_; }
 
+    uintptr_t getStackTop() {
+        return stackAddress;
+    }
+
+    uintptr_t getStackBottom() {
+        return stackBottom;
+    }
+
+    void setStackTop(uintptr_t stack_addr) {
+        stackAddress = stack_addr;
+    }
+
+    void setStackBottom(uintptr_t stack_bottom) {
+        stackBottom = stack_bottom;
+    }
+
     void Publish() noexcept {
         // TODO: These use separate locks, which is inefficient.
         globalsThreadQueue_.Publish();
@@ -73,6 +92,10 @@ public:
         globalsThreadQueue_.ClearForTests();
         specialRefRegistry_.clearForTests();
         allocator_.clearForTests();
+    }
+
+    common::ThreadHolder *GetCurrentThreadHolder() {
+        return currentThreadHolder;
     }
 
 private:
@@ -86,6 +109,10 @@ private:
     gc::GC::ThreadData gc_;
     std::vector<std::pair<ObjHeader**, ObjHeader*>> initializingSingletons_;
     ThreadSuspensionData suspensionData_;
+    // 新增一个成员变量，用来指向crt mutator.
+    common::ThreadHolder *currentThreadHolder;
+    uintptr_t stackAddress;
+    uintptr_t stackBottom;
 };
 
 } // namespace mm

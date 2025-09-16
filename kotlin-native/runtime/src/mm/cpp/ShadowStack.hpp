@@ -66,7 +66,8 @@ public:
     Iterator begin() noexcept { return Iterator(currentFrame_); }
     Iterator end() noexcept { return Iterator(nullptr); }
 
-private:
+// private:
+public:
     FrameOverlay* currentFrame_ = nullptr;
 };
 

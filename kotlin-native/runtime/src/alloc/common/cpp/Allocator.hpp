@@ -72,5 +72,7 @@ size_t allocatedHeapSize(ObjHeader* object) noexcept;
 
 size_t allocatedBytes() noexcept;
 
+size_t crtAllocatedHeapSize(ObjHeader* object) noexcept;
+
 void destroyExtraObjectData(mm::ExtraObjectData& extraObject) noexcept;
 }

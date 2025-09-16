@@ -60,7 +60,7 @@ public:
 
     static void SetThreadType(ThreadType type) { GetThreadLocalData()->threadType = type; }
 
-    static ThreadType GetThreadType() { return GetThreadLocalData()->threadType; }
+    static ThreadType GetThreadType() { return GetThreadLocalData()->threadType; }  // 这里需要进行绑定，否则不知道当前的thread是一个runtimeThread
 
     static void SetProcessorFlag(bool flag) { GetThreadLocalData()->isArkProcessor = flag; }
 

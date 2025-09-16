@@ -72,6 +72,7 @@ void RegionSpace::DumpAllRegionSummary(const char* msg) const
     oss << msg << "Current allocated: " << Pretty(from + to + young + old + other) << ". (from: " << Pretty(from)
         << "(exempt: " << Pretty(exempt) << "), to: " << Pretty(to) << ", young: " << Pretty(young)
         << ", old: " << Pretty(old) << ", other: " << Pretty(other) << ")";
+    printf("%s\n", oss.str().c_str());
     VLOG(DEBUG, oss.str().c_str());
 }
 

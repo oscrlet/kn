@@ -19,6 +19,7 @@ OBJ_GETTER(mm::AllocateObject, ThreadData* threadData, const TypeInfo* typeInfo)
     AssertThreadState(threadData, ThreadState::kRunnable);
     // TODO: Make this work with GCs that can stop thread at any point.
     auto* object = threadData->allocator().allocateObject(typeInfo);
+
     threadData->gc().onAllocation(object);
     // Prevents unsafe class publication (see KT-58995).
     // Also important in case of the concurrent GC mark phase.

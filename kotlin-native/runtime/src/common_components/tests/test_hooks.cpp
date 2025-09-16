@@ -21,7 +21,7 @@ void JitFortUnProt(size_t size, void* base) {}
 void FillFreeObject(void *object, size_t size) {}
 void VisitDynamicGlobalRoots(const RefFieldVisitor &visitorFunc) {}
 void VisitDynamicLocalRoots(const RefFieldVisitor &visitor) {}
-void VisitBaseRoots(const RefFieldVisitor &visitorFunc) {}
+void VisitBaseRoots(const RefFieldVisitor &visitorFunc) {}  // 这个cpp要删除. 在KN代码仓里面重新实现一遍
 void VisitDynamicConcurrentRoots(const RefFieldVisitor &visitorFunc) {}
 void VisitDynamicWeakGlobalRoots(const common::WeakRefFieldVisitor &visitorFunc) {}
 void VisitDynamicWeakGlobalRootsOld(const common::WeakRefFieldVisitor &visitorFunc) {}

@@ -428,12 +428,14 @@ void MarkingCollector::MarkingRoots(const CArrayList<BaseObject *> &collectedRoo
     ASSERT_LOGF(GetThreadPool() != nullptr, "null thread pool");
 
     // use fewer threads and lower priority for concurrent mark.
-    const uint32_t maxWorkers = GetGCThreadCount(true) - 1;
+    // const uint32_t maxWorkers = GetGCThreadCount(true) - 1;   // 并发mark会造成死锁
+    const uint32_t maxWorkers = GetGCThreadCount(false) - 1;
     VLOG(DEBUG, "Concurrent mark with %u threads, workStack: %zu", (maxWorkers + 1), workStack.size());
 
     {
         COMMON_PHASE_TIMER("Concurrent marking");
-        TracingImpl(workStack, maxWorkers > 0, false);
+       // TracingImpl(workStack, maxWorkers > 0, false);
+       TracingImpl(workStack, false, false);
     }
 }
 
@@ -444,9 +446,12 @@ void MarkingCollector::Remark()
     OHOS_HITRACE(HITRACE_LEVEL_COMMERCIAL, "CMCGC::Remark[STW]", "");
     COMMON_PHASE_TIMER("STW re-marking");
     RemarkAndPreforwardStaticRoots(workStack);
+    // 在这里触发UpdateAllocateAddr
+    UpdateAllocateAddr();
+
     ConcurrentRemark(workStack, maxWorkers > 0); // Mark enqueue
     TracingImpl(workStack, maxWorkers > 0, true);
-    MarkAwaitingJitFort(); // Mark awaiting
+    // MarkAwaitingJitFort(); // Mark awaiting
     ClearWeakStack(maxWorkers > 0);
 
     OHOS_HITRACE(HITRACE_LEVEL_COMMERCIAL, "CMCGC::MarkingRoots END",
@@ -736,8 +741,14 @@ void MarkingCollector::ReclaimGarbageMemory(GCReason reason)
 
 void MarkingCollector::RunGarbageCollection(uint64_t gcIndex, GCReason reason, GCType gcType)
 {
+    reinterpret_cast<RegionSpace&>(Heap::GetHeap().GetAllocator()).DumpAllRegionSummary("Start GC ");
     gcReason_ = reason;
+
+    // TODO:
+    gcReason_ = GCReason::GC_REASON_HEU;
     gcType_ = gcType;
+    gcType_ = GCType::GC_TYPE_FULL;
+
     auto gcReasonName = std::string(g_gcRequests[gcReason_].name);
     auto currentAllocatedSize = Heap::GetHeap().GetAllocatedSize();
     auto currentThreshold = Heap::GetHeap().GetCollector().GetGCStats().GetThreshold();
@@ -757,7 +768,8 @@ void MarkingCollector::RunGarbageCollection(uint64_t gcIndex, GCReason reason, G
     // this may be removed in the future.
     ScopedSTWLock stwLock;
     PreGarbageCollection(true);
-    Heap::GetHeap().SetGCReason(reason);
+    // Heap::GetHeap().SetGCReason(reason);
+    Heap::GetHeap().SetGCReason(gcReason_);
     GCStats& gcStats = GetGCStats();
 
     DoGarbageCollection();
@@ -796,6 +808,8 @@ void MarkingCollector::RunGarbageCollection(uint64_t gcIndex, GCReason reason, G
 
     UpdateGCStats();
 
+    reinterpret_cast<RegionSpace&>(Heap::GetHeap().GetAllocator()).DumpAllRegionSummary("After GC ");
+
     if (Heap::GetHeap().GetForceThrowOOM()) {
         Heap::throwOOM();
     }
@@ -809,7 +823,9 @@ void MarkingCollector::CopyFromSpace()
     GCStats& stats = GetGCStats();
     stats.liveBytesBeforeGC = space.GetAllocatedBytes();
     stats.fromSpaceSize = space.FromSpaceSize();
-    space.CopyFromSpace(GetThreadPool());
+    // TODO: Skip All pallel
+    // space.CopyFromSpace(GetThreadPool());
+    space.CopyFromSpace(nullptr);
 
     stats.smallGarbageSize = space.FromRegionSize() - space.ToSpaceSize();
 }

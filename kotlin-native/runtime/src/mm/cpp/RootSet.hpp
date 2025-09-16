@@ -51,6 +51,14 @@ public:
         bool operator==(const Iterator& rhs) const noexcept;
         bool operator!=(const Iterator& rhs) const noexcept { return !(*this == rhs); }
 
+        ShadowStack::Iterator GetStackIterator() {
+            return stackIterator_;
+        }
+
+        bool IsStackIterator() const {
+            return (phase_ == Phase::kStack);
+        }
+
     private:
         enum class Phase {
             kStack,
@@ -74,7 +82,7 @@ public:
     Iterator begin() noexcept { return Iterator(Iterator::begin, *this); }
     Iterator end() noexcept { return Iterator(Iterator::end, *this); }
 
-private:
+public:
     ShadowStack& stack_;
     ThreadLocalStorage& tls_;
 };

@@ -273,6 +273,7 @@ fun CompilerConfiguration.setupFromArguments(arguments: K2NativeCompilerArgument
             AllocationMode.MIMALLOC
         }
         "custom" -> AllocationMode.CUSTOM
+        "crt" -> AllocationMode.CRT
         else -> {
             report(ERROR, "Expected 'std', 'mimalloc', or 'custom' for allocator")
             AllocationMode.STD

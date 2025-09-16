@@ -48,6 +48,9 @@ public:
     static size_t ToAllocatedSize(size_t objSize)
     {
         size_t size = objSize + HEADER_SIZE;
+        if (size <= 8) {
+            size = 16;
+        }
         return RoundUp<size_t>(size, ALLOC_ALIGN);
     }
 

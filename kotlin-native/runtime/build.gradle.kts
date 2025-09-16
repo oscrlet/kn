@@ -357,6 +357,18 @@ bitcode {
             }
         }
 
+        module("crt_alloc") {
+            srcRoot.set(layout.projectDirectory.dir("src/alloc/crt"))
+            headersDirs.from(files("src/alloc/common/cpp", "src/gcScheduler/common/cpp", "src/gc/common/cpp", "src/mm/cpp", "src/externalCallsChecker/common/cpp", "src/objcExport/cpp", "src/main/cpp"))
+            sourceSets {
+                main {}
+                test {}
+                testFixtures {}
+            }
+
+            compilerArgs.add("-DCMC")
+        }
+
         module("custom_alloc") {
             srcRoot.set(layout.projectDirectory.dir("src/alloc/custom"))
             headersDirs.from(files("src/alloc/common/cpp", "src/gcScheduler/common/cpp", "src/gc/common/cpp", "src/mm/cpp", "src/externalCallsChecker/common/cpp", "src/objcExport/cpp", "src/main/cpp"))

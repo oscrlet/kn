@@ -150,7 +150,6 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
     // TODO: These should be set by the plugin users.
     private val DEFAULT_CPP_FLAGS = listOfNotNull(
             "-gdwarf-2".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.isNativeRuntimeDebugInfoEnabled", false) },
-          //"-gdwarf-2",
             "-std=c++17",
             "-Werror",
             "-O2",
@@ -159,6 +158,7 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
             "-Wall",
             "-Wextra",
             "-Wno-unused-parameter",  // False positives with polymorphic functions.
+            "-DCMC",
     )
 
     private val allTestsTasks by lazy {
@@ -250,6 +250,9 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
                 this.arguments.add("-I${nativeRoot.dir("runtime/src/common_interfaces").asFile.absolutePath}")
                 this.arguments.add("-I${nativeRoot.dir("runtime/src/third_party_bounds_checking_function/include").asFile.absolutePath}")
                 this.arguments.add("-I${nativeRoot.dir("runtime/src/libpandabase").asFile.absolutePath}")
+                this.arguments.add("-I${nativeRoot.dir("runtime/src/alloc/srt/cpp").asFile.absolutePath}")
+                this.arguments.add("-I${nativeRoot.dir("runtime/src/mm/cpp").asFile.absolutePath}")
+                this.arguments.add("-I${nativeRoot.dir("runtime/src/alloc/common/cpp").asFile.absolutePath}")
 
                 this.headersDirs.from(this@SourceSet.headersDirs)
                 this.inputFiles.from(this@SourceSet.inputFiles.dir)

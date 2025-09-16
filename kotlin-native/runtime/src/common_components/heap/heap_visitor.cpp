@@ -22,16 +22,17 @@ namespace common {
 
 void VisitRoots(const RefFieldVisitor &visitor)
 {
-    VisitDynamicGlobalRoots(visitor);
-    VisitDynamicLocalRoots(visitor);
-    VisitDynamicConcurrentRoots(visitor);
+    // 下面所有的函数都需要重新实现一遍  --> 完成根节点的扫描
+   // VisitDynamicGlobalRoots(visitor);
+   // VisitDynamicLocalRoots(visitor);
+   // VisitDynamicConcurrentRoots(visitor);
     VisitBaseRoots(visitor);
 }
 
 void VisitSTWRoots(const RefFieldVisitor &visitor)
 {
-    VisitDynamicGlobalRoots(visitor);
-    VisitDynamicLocalRoots(visitor);
+    //VisitDynamicGlobalRoots(visitor); // 这里难道要先进行适配?
+    //VisitDynamicLocalRoots(visitor);
     VisitBaseRoots(visitor);
 }
 

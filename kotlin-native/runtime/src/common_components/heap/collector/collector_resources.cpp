@@ -229,7 +229,7 @@ void CollectorResources::MarkGCStart()
     gcFinishedCondVar_.wait(lock, pred);
     
     // Now claim GC ownership
-    SetGcStarted(true);
+    SetGcStarted(true);  // 这里会启动GC
 }
 
 void CollectorResources::MarkGCFinish(uint64_t gcIndex)

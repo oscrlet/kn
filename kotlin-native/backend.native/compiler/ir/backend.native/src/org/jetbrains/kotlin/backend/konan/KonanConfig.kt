@@ -348,6 +348,7 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
                     AllocationMode.STD
                 }
             }
+            AllocationMode.CRT -> AllocationMode.CRT
             AllocationMode.CUSTOM -> {
                 if (sanitizer != null) {
                     configuration.report(CompilerMessageSeverity.STRONG_WARNING, "Sanitizers are useful only with the std allocator")
@@ -418,14 +419,24 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
             AllocationMode.STD -> {
                 add("legacy_alloc.bc")
                 add("std_alloc.bc")
+               // add("crt_alloc.bc")
                 add("common_components.bc")
-                // add("common_runtime.bc")
                 add("libpandabase.bc")
                 add("tests.bc")
                 add("third_party_bounds_checking_function.bc")
             }
             AllocationMode.CUSTOM -> {
                 add("custom_alloc.bc")
+                add("common_components.bc")
+                add("libpandabase.bc")
+                add("tests.bc")
+                add("third_party_bounds_checking_function.bc")
+            }
+            AllocationMode.CRT -> {
+                add("crt_alloc.bc")
+                add("common_components.bc")
+                add("libpandabase.bc")
+                add("third_party_bounds_checking_function.bc")
             }
         }
         when (checkStateAtExternalCalls) {
