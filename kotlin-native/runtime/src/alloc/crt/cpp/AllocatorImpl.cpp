@@ -77,6 +77,25 @@ size_t alloc::allocatedHeapSize(ObjHeader* object) noexcept {
     return CustomAllocator::GetAllocatedHeapSize(object);
 }
 
+size_t alloc::crtAllocatedHeapSize(ObjHeader* object) noexcept {
+    const ObjHeader* objHeader = reinterpret_cast<const ObjHeader*>(object);
+   if (objHeader->typeInfoOrMeta_->IsArray()) {
+       const ArrayHeader* arrayHeader = objHeader->array();
+       auto count = arrayHeader->count_;
+       if (arrayHeader->type_info()== theStringTypeInfo) {
+            auto descriptor = kotlin::alloc::CustomHeapArray::descriptorFrom(arrayHeader->typeInfoOrMeta_, count + 1);
+            return descriptor.size();
+       } else {
+            auto descriptor = kotlin::alloc::CustomHeapArray::descriptorFrom(arrayHeader->typeInfoOrMeta_, count);
+            return descriptor.size();
+       }
+       // auto tmpSize = kotlin::alloc::CustomHeapArray::descriptorFrom(arrayHeader->typeInfoOrMeta_, count + 1).size();
+       // printf("Run in GetAllocSize ptr: %p, size: %llu, count: %d, tmpSize: %llu\n", object, descriptor.size(), count, tmpSize);
+   } else {
+       return kotlin::alloc::allocatedHeapSize(const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(object)));
+   }
+}
+
 size_t alloc::allocatedBytes() noexcept {
     return GetAllocatedBytes();
 }

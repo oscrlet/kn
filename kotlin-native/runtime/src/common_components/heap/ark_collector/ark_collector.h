@@ -152,6 +152,25 @@ public:
         }
     }
 
+    void PushBackAllocateAddr(const BaseObject* obj) override {
+        allocateAddrSet.insert(obj);
+    }
+
+    bool IsInAllocateAddr(const BaseObject* obj) override {
+        return allocateAddrSet.find(obj) != allocateAddrSet.end();
+    }
+
+    void UpdateAllocateAddr() {
+        // TODO: 会存在存活但是不copy的情况
+        std::unordered_set<const BaseObject *> updateAllocateAddrSet;
+        for (auto item : allocateAddrSet) {
+            if (auto fwdPtr = item->GetForwardingPointer()) {
+                updateAllocateAddrSet.insert(fwdPtr);
+            }
+        }
+        allocateAddrSet = updateAllocateAddrSet;
+    }
+
 protected:
     void CollectLargeGarbage()
     {
@@ -228,6 +247,8 @@ private:
     CopyTable fwdTable_;
 
     GCMode gcMode_ = GCMode::CMC;
+    // 添加Map
+    std::unordered_set<const BaseObject*> allocateAddrSet;
 };
 } // namespace common
 

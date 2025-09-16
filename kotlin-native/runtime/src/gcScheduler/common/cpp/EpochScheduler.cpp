@@ -38,7 +38,7 @@ Epoch gcScheduler::internal::EpochScheduler::scheduleNextEpochIfNotInProgress(Sc
         return *scheduled;
     }
     auto epoch = scheduleGC_();
-    scheduledEpoch_ = epoch;
+    scheduledEpoch_ = epoch;  // 这里的设置会让waitScheduled的谓词条件为true.
     reason.log();
     return epoch;
 }

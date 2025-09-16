@@ -132,6 +132,10 @@ public:
     void Init(const RuntimeParam& param) override;
     void Fini() override;
 
+    void PushBackAllocateAddr(const BaseObject* obj) override {}
+    bool IsInAllocateAddr(const BaseObject* obj) override {}
+    void UpdateAllocateAddr() override {}
+
 #if defined(GCINFO_DEBUG) && GCINFO_DEBUG
     void DumpRoots(LogType logType);
     void DumpHeap(const CString& tag);
@@ -229,6 +233,7 @@ public:
 
     void TransitionToGCPhase(const GCPhase phase, const bool)
     {
+       //  printf("The gcPhase is %d\n", phase);
         MutatorManager::Instance().TransitionAllMutatorsToGCPhase(phase);
     }
 
@@ -286,7 +291,8 @@ protected:
 
     uint32_t GetGCThreadCount(const bool isConcurrent) const
     {
-        return collectorResources_.GetGCThreadCount(isConcurrent);
+        // return collectorResources_.GetGCThreadCount(isConcurrent);
+        return 1;
     }
 
     inline WorkStack NewWorkStack() const

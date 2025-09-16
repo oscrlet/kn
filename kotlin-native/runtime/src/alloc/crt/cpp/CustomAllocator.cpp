@@ -46,9 +46,7 @@ ALWAYS_INLINE ObjHeader* CustomAllocator::CreateObject(const TypeInfo* typeInfo)
     RuntimeAssert(!typeInfo->IsArray(), "Must not be an array");
     auto descriptor = CustomHeapObject::descriptorFrom(typeInfo);
     // 在这里接入Common Runtime 的Allocate.
-    auto& heapObject = *descriptor.construct(reinterpret_cast<uint8_t*>(common::HeapAllocator::AllocateInOldOrHuge(descriptor.size(), common::LanguageType::DYNAMIC)));
-    // TODO: LanguageType:
-    
+    auto& heapObject = *descriptor.construct(reinterpret_cast<uint8_t*>(common::HeapAllocator::AllocateInYoungOrHuge(descriptor.size(), common::LanguageType::DYNAMIC)));
     // auto& heapObject = *descriptor.construct(Allocate(descriptor.size()));
     ObjHeader* object = heapObject.object();
     if (typeInfo->flags_ & TF_HAS_FINALIZER) {
@@ -66,7 +64,7 @@ ALWAYS_INLINE ArrayHeader* CustomAllocator::CreateArray(const TypeInfo* typeInfo
     CustomAllocDebug("CustomAllocator@%p::CreateArray(%d)", this ,count);
     RuntimeAssert(typeInfo->IsArray(), "Must be an array");
     auto descriptor = CustomHeapArray::descriptorFrom(typeInfo, count);
-    auto& heapArray = *descriptor.construct(reinterpret_cast<uint8_t*>(common::HeapAllocator::AllocateInOldOrHuge(descriptor.size(), common::LanguageType::DYNAMIC)));
+    auto& heapArray = *descriptor.construct(reinterpret_cast<uint8_t*>(common::HeapAllocator::AllocateInYoungOrHuge(descriptor.size(), common::LanguageType::DYNAMIC)));
     // auto& heapArray = *descriptor.construct(Allocate(descriptor.size()));
     ArrayHeader* array = heapArray.array();
     array->typeInfoOrMeta_ = const_cast<TypeInfo*>(typeInfo);
@@ -136,7 +134,7 @@ NO_INLINE uint8_t* CustomAllocator::AllocateInNextFitPageSlowPath(uint32_t cellC
 
 ALWAYS_INLINE uint8_t* CustomAllocator::AllocateInFixedBlockPage(uint32_t cellCount) noexcept {
     CustomAllocDebug("CustomAllocator::AllocateInFixedBlockPage(%u)", cellCount);
-    FixedBlockPage* page = fixedBlockPages_[cellCount];  // page block 全满了
+    FixedBlockPage* page = fixedBlockPages_[cellCount];
     if (page) {
         uint8_t* block = page->TryAllocate(cellCount);
         if (block) return block;

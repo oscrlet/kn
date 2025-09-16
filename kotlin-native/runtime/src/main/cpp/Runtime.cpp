@@ -28,6 +28,7 @@
 #include "common_components/heap/heap.h"
 #include "common_components/heap/allocator/region_desc.h"
 #include "common_components/common_runtime/base_runtime_param.h"
+#include "alloc/crt/cpp/hooks.h"
 #endif 
 
 using namespace kotlin;
@@ -95,23 +96,27 @@ std::atomic<GlobalRuntimeStatus> globalRuntimeStatus = kGlobalRuntimeUninitializ
 void Kotlin_deinitRuntimeCallback(void* argument);
 
 NO_INLINE RuntimeState* initRuntime() {
-#ifdef CMC
-  // 在这里尝试初始化Common Runtime.             // 环境切换.
+  // 在这里尝试初始化Common Runtime
   // common::RuntimeParam param;
+//#ifdef CRT_ALLOCATOR
   common::RuntimeParam param = common::BaseRuntimeParam::DefaultRuntimeParam();
-  // 关闭CMC GC.
-  param.gcParam.enableGC = false;
+ // param.gcParam.enableGC = false;
+  param.gcParam.enableStwGC = true;
   // 调整crt的gc阈值
   // param.gcParam.gcInterval = 100000;
   // param.gcParam.garbageThreshold = 0.1;
   // param.gcParam.gcThreads = 1;
   // param.gcParam.gcThreshold = 1;
-
+  printf("Run in initRuntime\n");
   common::BaseRuntime::GetInstance()->Init(param);
   auto *holder_ = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
   auto *scope_ = new common::ThreadHolder::TryBindMutatorScope(holder_);
   (void)scope_;
-#endif
+
+  // 注册BaseObjectOperatorInterfaces*.
+  common::KNBaseObjectOperator *knOperator = new common::KNBaseObjectOperator();
+  common::BaseObject::RegisterDynamic(knOperator);
+//#endif
 
   SetKonanTerminateHandler();
   initObjectPool();

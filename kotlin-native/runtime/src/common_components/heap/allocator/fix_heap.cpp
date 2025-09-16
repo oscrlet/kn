@@ -22,7 +22,9 @@ namespace common {
 
 void FixHeapWorker::CollectFixHeapTasks(FixHeapTaskList &taskList, RegionList &list, FixRegionType type)
 {
-    list.VisitAllRegions([&taskList, type](RegionDesc *region) { taskList.emplace_back(region, type); });
+    list.VisitAllRegions([&taskList, type](RegionDesc *region) { 
+        taskList.emplace_back(region, type); 
+    });
 }
 
 void FixHeapWorker::FixOldRegion(RegionDesc *region)
@@ -57,11 +59,12 @@ void FixHeapWorker::FixRegion(RegionDesc *region)
     }
 
     region->VisitAllObjects([this, region, cellCount](BaseObject *object) {
+        //printf("Run in FixRegion\n");
         if (collector_->IsSurvivedObject(object)) {
             collector_->FixObjectRefFields(object);
         } else {
             if constexpr (type == FixHeapWorker::FILL_FREE) {
-                FillFreeObject(object, RegionSpace::GetAllocSize(*object));
+               // FillFreeObject(object, RegionSpace::GetAllocSize(*object));
             } else if constexpr (type == FixHeapWorker::COLLECT_FIXED_PINNED) {
                 result_.fixedPinnedGarbages.emplace_back(region, object, cellCount);
             } else if constexpr (type == FixHeapWorker::COLLECT_PINNED) {
@@ -85,9 +88,10 @@ void FixHeapWorker::FixRecentRegion(RegionDesc *region)
     region->VisitAllObjectsBeforeCopy([this, region, cellCount](BaseObject *object) {
         if (region->IsNewObjectSinceMarking(object) || collector_->IsSurvivedObject(object)) {
             collector_->FixObjectRefFields(object);
+            // printf("if (region->IsNewObjectSinceMarking(object) || collector_->IsSurvivedObject(object)): %p\n");
         } else {  // handle dead objects in tl-regions for concurrent gc.
             if constexpr (type == FixHeapWorker::FILL_FREE) {
-                FillFreeObject(object, RegionSpace::GetAllocSize(*object));
+                // FillFreeObject(object, RegionSpace::GetAllocSize(*object));
             } else if constexpr (type == FixHeapWorker::COLLECT_FIXED_PINNED) {
                 result_.fixedPinnedGarbages.emplace_back(region, object, cellCount);
             } else if constexpr (type == FixHeapWorker::COLLECT_PINNED) {
@@ -161,9 +165,9 @@ void PostFixHeapWorker::PostClearTask()
     for (auto [region, object, cellCount] : result_.fixedPinnedGarbages) {
         region->CollectPinnedGarbage(object, cellCount);
     }
-    for (auto [object, size] : result_.pinnedGarbages) {
-        FillFreeObject(object, size);
-    }
+    // for (auto [object, size] : result_.pinnedGarbages) {
+    //     FillFreeObject(object, size);
+    // }
     DLOG(FIX, "Fix heap worker processed %d Regions, %d fixedPinnedGarbages, %d pinnedGarbages",
          result_.numProcessedRegions, result_.fixedPinnedGarbages.size(), result_.pinnedGarbages.size());
 }

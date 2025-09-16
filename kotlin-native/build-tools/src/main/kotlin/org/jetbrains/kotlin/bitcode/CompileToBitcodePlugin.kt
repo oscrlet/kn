@@ -153,6 +153,7 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
             "-std=c++17",
             "-Werror",
             "-O2",
+            //"-O0",
             "-fno-aligned-allocation", // TODO: Remove when all targets support aligned allocation in C++ runtime.
             "-Wall",
             "-Wextra",

@@ -149,31 +149,31 @@ void FromSpace::CopyFromRegions()
 
 void FromSpace::CopyFromRegions(Taskpool* threadPool)
 {
-    if (threadPool != nullptr) {
-        uint32_t parallel = Heap::GetHeap().GetCollectorResources().GetGCThreadCount(true) - 1;
-        uint32_t threadNum = parallel + 1;
-        // We won't change fromRegionList during gc, so we can use it without lock.
-        size_t totalRegionCount = fromRegionList_.GetRegionCount();
-        if (UNLIKELY_CC(totalRegionCount == 0)) {
-            return;
-        }
-        size_t regionCntEachTask = totalRegionCount / static_cast<size_t>(threadNum);
-        size_t leftRegionCnt = totalRegionCount - regionCntEachTask * parallel;
-        RegionDesc* region = fromRegionList_.GetHeadRegion();
-        TaskPackMonitor monitor(parallel, parallel);
-        for (uint32_t i = 0; i < parallel; ++i) {
-            ASSERT_LOGF(region != nullptr, "from region list records wrong region info");
-            RegionDesc* startRegion = region;
-            for (size_t count = 0; count < regionCntEachTask; ++count) {
-                region = region->GetNextRegion();
-            }
-            threadPool->PostTask(std::make_unique<CopyTask>(0, *this, startRegion, regionCntEachTask, monitor));
-        }
-        ParallelCopyFromRegions(region, leftRegionCnt);
-        monitor.WaitAllFinished();
-    } else {
+    // if (threadPool != nullptr) {
+    //     uint32_t parallel = Heap::GetHeap().GetCollectorResources().GetGCThreadCount(true) - 1;
+    //     uint32_t threadNum = parallel + 1;
+    //     // We won't change fromRegionList during gc, so we can use it without lock.
+    //     size_t totalRegionCount = fromRegionList_.GetRegionCount();
+    //     if (UNLIKELY_CC(totalRegionCount == 0)) {
+    //         return;
+    //     }
+    //     size_t regionCntEachTask = totalRegionCount / static_cast<size_t>(threadNum);
+    //     size_t leftRegionCnt = totalRegionCount - regionCntEachTask * parallel;
+    //     RegionDesc* region = fromRegionList_.GetHeadRegion();
+    //     TaskPackMonitor monitor(parallel, parallel);
+    //     for (uint32_t i = 0; i < parallel; ++i) {
+    //         ASSERT_LOGF(region != nullptr, "from region list records wrong region info");
+    //         RegionDesc* startRegion = region;
+    //         for (size_t count = 0; count < regionCntEachTask; ++count) {
+    //             region = region->GetNextRegion();
+    //         }
+    //         threadPool->PostTask(std::make_unique<CopyTask>(0, *this, startRegion, regionCntEachTask, monitor));
+    //     }
+    //     ParallelCopyFromRegions(region, leftRegionCnt);
+    //     monitor.WaitAllFinished();
+    // } else {
         CopyFromRegions();
-    }
+    // }
 }
 
 void FromSpace::GetPromotedTo(OldSpace& mspace)
