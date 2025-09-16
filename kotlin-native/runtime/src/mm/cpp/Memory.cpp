@@ -503,20 +503,11 @@ bool kotlin::FinalizersThreadIsRunning() noexcept {
 }
 
 RUNTIME_NOTHROW ALWAYS_INLINE extern "C" void Kotlin_processObjectInMark(void* state, ObjHeader* object) {
-// #ifndef CRT_ALLOCATOR
-//     gc::GC::processObjectInMark(state, object);
-// #else
-    common::processObjectInMark(state, object);
-// #endif
+    gc::GC::processObjectInMark(state, object);
 }
 
 RUNTIME_NOTHROW ALWAYS_INLINE extern "C" void Kotlin_processArrayInMark(void* state, ObjHeader* object) {
-// #ifndef CRT_ALLOCATOR
-    // gc::GC::processArrayInMark(state, object->array());
-// #else
-    // 这里需要看一下如何把逻辑剥离出来.
-    common::processArrayInMark(state, object->array());
-// #endif
+    gc::GC::processArrayInMark(state, object->array());
 }
 RUNTIME_NOTHROW extern "C" void Kotlin_processEmptyObjectInMark(void* state, ObjHeader* object) {
     // Empty object. Nothing to do.

@@ -32,8 +32,6 @@
 #include "common_components/heap/heap.h"
 #include "common_components/heap/allocator/region_desc.h"
 #include "common_components/common_runtime/base_runtime_param.h"
-#include "alloc/crt/cpp/hooks.h"
-#endif 
 
 using namespace kotlin;
 
@@ -159,10 +157,6 @@ NO_INLINE RuntimeState* initRuntime() {
   auto *holder_ = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
   auto *scope_ = new common::ThreadHolder::TryBindMutatorScope(holder_);
   (void)scope_;
-
-  // 注册BaseObjectOperatorInterfaces*.
-  common::KNBaseObjectOperator *knOperator = new common::KNBaseObjectOperator();
-  common::BaseObject::RegisterDynamic(knOperator);
 //#endif
 
   SetKonanTerminateHandler();

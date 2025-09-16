@@ -252,12 +252,6 @@ size_t KNBaseObjectOperator::GetSize(const BaseObject *object) const {
    }
 }
 
-void KNBaseObjectOperator::ForEachRefField(const BaseObject *crtObject, const RefFieldVisitor &visitor) const {
-    ObjHeader *object = const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(crtObject));
-    auto process = object->type_info()->processObjectInMark;
-    process(static_cast<void*>(const_cast<RefFieldVisitor*>(&visitor)), object);
-}
-
 void processFieldInMark(const RefFieldVisitor &visitor, ObjHeader* object, ObjHeader* &field) noexcept {
     if (common::Heap::IsHeapAddress(field)) {
         if (reinterpret_cast<BaseObject*>(field)->GetSize() != 0) {
@@ -268,28 +262,35 @@ void processFieldInMark(const RefFieldVisitor &visitor, ObjHeader* object, ObjHe
     }
 }
 
-void processArrayInMark(void* state, void* objHeader) {
-    const RefFieldVisitor *visitorPtr = reinterpret_cast<const RefFieldVisitor*>(state);
-    ArrayHeader *arrayHeader = reinterpret_cast<ArrayHeader*>(objHeader);
+void processArrayInMark(const RefFieldVisitor &visitor, ObjHeader *object) {
+    ArrayHeader *arrayHeader = reinterpret_cast<ArrayHeader*>(object);
     kotlin::traverseArrayOfObjectsElements(arrayHeader, [=] (auto elemAccessor) noexcept {
        if (ObjHeader** elem = elemAccessor.direct().location()) {
             if (*elem) {
-                processFieldInMark(*visitorPtr, arrayHeader->obj(), *elem);
+                processFieldInMark(visitor, arrayHeader->obj(), *elem);
             }
         }
     });
 }
 
-void processObjectInMark(void* state, void* objHeader) {
-    const RefFieldVisitor *visitorPtr = reinterpret_cast<const RefFieldVisitor*>(state);
-    ObjHeader *object = reinterpret_cast<ObjHeader*>(objHeader);
+void processObjectInMark(const RefFieldVisitor &visitor, ObjHeader *object) {
     kotlin::traverseClassObjectFields(object, [=] (auto fieldAccessor) noexcept {
         if (ObjHeader** field = fieldAccessor.direct().location()) {
             if (*field) {
-                processFieldInMark(*visitorPtr, object, *field);
+                processFieldInMark(visitor, object, *field);
             }
         }
     });
+}
+
+void KNBaseObjectOperator::ForEachRefField(const BaseObject *crtObject, const RefFieldVisitor &visitor) const {
+    ObjHeader *object = const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(crtObject));
+    auto process = object->type_info()->processObjectInMark;
+    if (process == Kotlin_processArrayInMark) {
+        processArrayInMark(visitor, object);
+    } else if (process == Kotlin_processObjectInMark) {
+        processObjectInMark(visitor, object);
+    }
 }
 
 } // namespace common
