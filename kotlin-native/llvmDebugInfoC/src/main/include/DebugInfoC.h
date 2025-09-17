@@ -108,6 +108,7 @@ DILocalVariableRef DICreateParameterVariable(DIBuilderRef builder, DIScopeOpaque
 void DIInsertDeclaration(DIBuilderRef builder, LLVMValueRef value, DILocalVariableRef localVariable, DILocationRef location, LLVMBasicBlockRef bb, int64_t *expr, uint64_t exprCount);
 DIExpressionRef DICreateEmptyExpression(DIBuilderRef builder);
 void DIFunctionAddSubprogram(LLVMValueRef fn, DISubprogramRef sp);
+DISubprogramRef DIFunctionGetSubprogram(LLVMValueRef fn);
 DILocationRef LLVMCreateLocation(LLVMContextRef contextRef, unsigned line, unsigned col, DIScopeOpaqueRef scope);
 DILocationRef LLVMCreateLocationInlinedAt(LLVMContextRef contextRef, unsigned line, unsigned col, DIScopeOpaqueRef scope, DILocationRef refLocation);
 void LLVMBuilderSetDebugLocation(LLVMBuilderRef builder, DILocationRef refLocation);

@@ -58,6 +58,10 @@ class LlvmCallable(val functionType: LLVMTypeRef, val returnsObjectType: Boolean
         DIFunctionAddSubprogram(llvmValue, subprogram)
     }
 
+    fun getDebugInfoSubprogram(): DISubprogramRef? {
+        return DIFunctionGetSubprogram(llvmValue)
+    }
+
     fun createBridgeFunctionDebugInfo(builder: DIBuilderRef, scope: DIScopeOpaqueRef, file: DIFileRef, lineNo: Int, type: DISubroutineTypeRef, isLocal: Int, isDefinition: Int, scopeLine: Int) =
         DICreateBridgeFunction(
                 builder = builder,
