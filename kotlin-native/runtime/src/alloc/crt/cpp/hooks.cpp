@@ -162,29 +162,25 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
     // 加 50
     // printf("Print Frames during colllectRoots:\n");
     currentFrame = rootSet.stack_.currentFrame_;
-    uintptr_t minFrame = currentFrame ? reinterpret_cast<uintptr_t>(currentFrame) : UINTPTR_MAX;
-    uintptr_t maxFrame = currentFrame ? reinterpret_cast<uintptr_t>(currentFrame) : 0;
-    while(currentFrame != nullptr) {
-        if ((uintptr_t)currentFrame - frameSize <= reinterpret_cast<uintptr_t>(minFrame)) {
-            for(auto i = (uintptr_t)currentFrame - frameSize; i <= (uintptr_t)minFrame; i++) {
-                ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(i));
-                collectRoot(visitorFunc, *tmpObj);
-            }
-            minFrame = reinterpret_cast<uintptr_t>(currentFrame) - frameSize;
+    assert(currentFrame);
+    uintptr_t minFrame =  UINTPTR_MAX;
+    uintptr_t maxFrame = 0;
+    while (currentFrame != nullptr) {
+        if ((uintptr_t)currentFrame < minFrame) {
+            minFrame = (uintptr_t)currentFrame;
         }
-        if ((uintptr_t)currentFrame + frameSize >= reinterpret_cast<uintptr_t>(maxFrame)) {
-            for(auto i = (uintptr_t)maxFrame; i <= (uintptr_t)currentFrame + frameSize; i++) {
-                ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(i));
-                collectRoot(visitorFunc, *tmpObj);
-            }
-            maxFrame = reinterpret_cast<uintptr_t>(currentFrame) + frameSize;
+        if ((uintptr_t)currentFrame > maxFrame) {
+            maxFrame = (uintptr_t)currentFrame;
         }
         currentFrame = currentFrame->previous;
     }
-
+    minFrame -= (frameSize * sizeof(uintptr_t));
+    maxFrame += (frameSize * sizeof(uintptr_t));
+    for (auto i = (uintptr_t)minFrame; i <= (uintptr_t)maxFrame; i += sizeof(uintptr_t)) {
+        ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(i));
+        collectRoot(visitorFunc, *tmpObj);
+    }
     print("[GC DEBUG] collectRootSetForThread time: %lld ns\n", common::TimeUtil::NanoSeconds() - common::start);
-    //printf("Print Frames after collectRoots:\n");
-    //PrintFrame(thread, frameSize);
 }
 
 // void collectRootSetGlobals(const common::RefFieldVisitor &visitorFunc) {
