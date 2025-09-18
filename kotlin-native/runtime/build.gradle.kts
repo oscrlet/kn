@@ -80,40 +80,6 @@ bitcode {
                     srcRoot.dir("../third_party_bounds_checking_function/include")) 
                 }
             }
-            compilerArgs.set(listOfNotNull(
-                //"-g",
-                //"-gdwarf-2",
-                "-DNDEBUG",
-                "-Wall",
-                "-Wshadow",
-                //"-Werror",
-                "-Wextra",
-                "-O2",
-                "-pedantic",
-               // "-Wno-invalid-offsetof",
-                "-Wno-gnu-statement-expression",
-                "-pipe",
-                "-Wdate-time",
-                "-funwind-tables",
-                "-fno-rtti",
-                "-fasynchronous-unwind-tables",
-                "-Wformat=2",
-                "-std=c++17",
-                "-Wno-unused-command-line-argument",
-                "-Wno-variadic-macros",
-                "-Wno-gnu-anonymous-struct",
-                "-Wno-zero-length-array",
-                "-Wno-nested-anon-types",
-                "-Wno-c99-extensions",
-                "-Wno-unused-parameter",
-                "-Wno-shadow",
-                "-Wno-pedantic",
-                "-Wno-gnu-zero-variadic-macro-arguments",
-                "-Wno-unused-lambda-capture",
-                "-Wno-unused-function",
-                "-Wno-unused-variable",
-                //"-Wno-unused-but-set-variable",
-            ))
         }
         
         module("tests") {
@@ -129,37 +95,6 @@ bitcode {
                     srcRoot.dir("../third_party_bounds_checking_function/include")) 
                 }
             }
-            compilerArgs.set(listOfNotNull(
-                "-Wall",
-                "-Wshadow",
-               // "-Werror",
-                "-DNDEBUG",
-                "-Wextra",
-                "-pedantic",
-               // "-Wno-invalid-offsetof",
-                "-Wno-gnu-statement-expression",
-                "-pipe",
-                "-Wdate-time",
-                "-funwind-tables",
-                "-fno-rtti",
-                "-fasynchronous-unwind-tables",
-                "-Wformat=2",
-                "-std=c++17",
-                "-Wno-unused-command-line-argument",
-                "-Wno-variadic-macros",
-                "-Wno-gnu-anonymous-struct",
-                "-Wno-zero-length-array",
-                "-Wno-nested-anon-types",
-                "-Wno-c99-extensions",
-                "-Wno-unused-parameter",
-                "-Wno-shadow",
-                "-Wno-pedantic",
-                "-Wno-gnu-zero-variadic-macro-arguments",
-                "-Wno-unused-lambda-capture",
-                "-Wno-unused-function",
-                "-Wno-unused-variable",
-                //"-Wno-unused-but-set-variable",
-            ))
         }
 
         module("libpandabase") {
@@ -177,37 +112,6 @@ bitcode {
                     srcRoot.dir("../third_party_bounds_checking_function/include")) 
                 }
             }
-            compilerArgs.set(listOfNotNull(
-                "-Wall",
-                "-Wshadow",
-                "-DNDEBUG",
-                "-Werror",
-                "-Wextra",
-                "-pedantic",
-              //  "-Wno-invalid-offsetof",
-                "-Wno-gnu-statement-expression",
-                "-pipe",
-                "-Wdate-time",
-                "-funwind-tables",
-                "-fno-rtti",
-                "-fasynchronous-unwind-tables",
-                "-Wformat=2",
-                "-std=c++17",
-                "-Wno-unused-command-line-argument",
-                "-Wno-variadic-macros",
-                "-Wno-gnu-anonymous-struct",
-                "-Wno-zero-length-array",
-                "-Wno-nested-anon-types",
-                "-Wno-c99-extensions",
-                "-Wno-unused-parameter",
-                "-Wno-shadow",
-                "-Wno-pedantic",
-                "-Wno-gnu-zero-variadic-macro-arguments",
-                "-Wno-unused-lambda-capture",
-                "-Wno-unused-function",
-                "-Wno-unused-variable",
-                //"-Wno-unused-but-set-variable",
-            ))
         }
 
         module("third_party_bounds_checking_function") {
@@ -223,23 +127,6 @@ bitcode {
                     srcRoot.dir("../third_party_bounds_checking_function/include")) 
                 }
             }
-
-            compiler.set("clang")
-            compilerArgs.set(listOfNotNull(
-                "-std=gnu11",
-                "-funwind-tables",
-                "-DNDEBUG",
-                "-W",
-                "-Wall",
-                "-Wwrite-strings",
-                "-Wstrict-prototypes",
-                "-Wmissing-prototypes",
-                "-Wold-style-definition",
-                "-Wmissing-format-attribute",
-                "-Wcast-qual",
-                "-O2",
-                "-Wno-atomic-alignment"
-            ))
        }
 
         module("mimalloc") {

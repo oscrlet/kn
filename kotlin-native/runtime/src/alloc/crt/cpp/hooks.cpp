@@ -250,10 +250,6 @@ size_t KNBaseObjectOperator::GetSize(const BaseObject *object) const {
 
 void processFieldInMark(const RefFieldVisitor &visitor, ObjHeader* object, ObjHeader* &field) noexcept {
     if (common::Heap::IsHeapAddress(field)) {
-        if (reinterpret_cast<BaseObject*>(field)->GetSize() != 0) {
-            bool flag = true;
-            (void)flag;
-        }
         visitor(reinterpret_cast<common::RefField<>&>(field));
     }
 }

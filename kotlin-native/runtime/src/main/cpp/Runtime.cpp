@@ -151,7 +151,6 @@ NO_INLINE RuntimeState* initRuntime() {
   // param.gcParam.garbageThreshold = 0.1;
   // param.gcParam.gcThreads = 1;
   // param.gcParam.gcThreshold = 1;
-  printf("Run in initRuntime\n");
   common::BaseRuntime::GetInstance()->Init(param);
   InitLog();
   auto *holder_ = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
