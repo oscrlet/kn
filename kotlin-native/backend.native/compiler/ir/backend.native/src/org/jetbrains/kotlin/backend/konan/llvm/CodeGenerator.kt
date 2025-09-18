@@ -709,6 +709,9 @@ internal abstract class FunctionGenerationContext(
         return applyMemoryOrderAndAlignment(LLVMBuildLoad2(builder, type, address, name)!!, memoryOrder, alignment)
     }
 
+    fun loadFromCMC(address: LLVMValueRef, thisPtr: LLVMValueRef) : LLVMValueRef =
+            call(llvm.readHeapRefFunction, listOf(address, thisPtr))
+
     fun loadSlot(
             type: LLVMTypeRef,
             isObjectType: Boolean,
@@ -720,12 +723,15 @@ internal abstract class FunctionGenerationContext(
             alignment: Int? = null,
             thisPtr: LLVMValueRef = codegen.kNullObjHeaderPtr
     ): LLVMValueRef {
-        if (isObjectType && thisPtr != codegen.kNullObjHeaderPtr) {
-            call(llvm.readHeapRefFunction, listOf(address, thisPtr))
+        val isObjectField = isObjectType && thisPtr != codegen.kNullObjHeaderPtr
+        val value: LLVMValueRef
+        if (isObjectField) {
+            value = loadFromCMC(address, thisPtr)
+        } else {
+            value = LLVMBuildLoad2(builder, type, address, name)!!
+            memoryOrder?.let { LLVMSetOrdering(value, it) }
+            alignment?.let { LLVMSetAlignment(value, it) }
         }
-        val value = LLVMBuildLoad2(builder, type, address, name)!!
-        memoryOrder?.let { LLVMSetOrdering(value, it) }
-        alignment?.let { LLVMSetAlignment(value, it) }
         if (isObjectType && isVar) {
             val slot = resultSlot ?: alloca(type, isObjectType, variableLocation = null)
             storeStackRef(value, slot)

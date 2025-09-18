@@ -27,6 +27,10 @@
 #undef ERROR
 #endif
 
+#ifndef NDEBUG
+// #define NDEBUG 1
+#endif
+
 namespace common {
 #ifndef PANDA_TARGET_WINDOWS
 #define PUBLIC_API __attribute__((visibility ("default")))

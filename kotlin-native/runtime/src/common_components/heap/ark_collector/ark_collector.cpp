@@ -634,12 +634,12 @@ void ArkCollector::PreforwardFlip()
         }
     };
     FlipFunction forwardMutatorRoot = [this](Mutator &mutator) {
-        WeakRefFieldVisitor weakVisitor = GetWeakRefFieldVisitor();
-        VisitWeakMutatorRoot(weakVisitor, mutator);
-        RefFieldVisitor visitor = GetPrefowardRefFieldVisitor();
-        VisitMutatorPreforwardRoot(visitor, mutator);
-        // Request finalize callback in each vm-thread when gc finished.
-        mutator.SetFinalizeRequest();
+        // WeakRefFieldVisitor weakVisitor = GetWeakRefFieldVisitor();
+        // VisitWeakMutatorRoot(weakVisitor, mutator);
+        // RefFieldVisitor visitor = GetPrefowardRefFieldVisitor();
+        // VisitMutatorPreforwardRoot(visitor, mutator);
+        // // Request finalize callback in each vm-thread when gc finished.
+        // mutator.SetFinalizeRequest();
     };
     STWParam stwParam{"final-mark"};
     MutatorManager::Instance().FlipMutators(stwParam, remarkAndForwardGlobalRoot, &forwardMutatorRoot);
@@ -885,11 +885,11 @@ CArrayList<CArrayList<BaseObject *>> ArkCollector::EnumRootsFlip(STWParam& param
     std::mutex stackMutex;
     CArrayList<CArrayList<BaseObject *>> rootSet;  // allcate for each mutator
     FlipFunction enumMutatorRoot = [&rootSet, &stackMutex](Mutator &mutator) {
-        CArrayList<BaseObject *> roots;
-        RefFieldVisitor localVisitor = [&roots](RefField<> &root) { roots.emplace_back(root.GetTargetObject()); };
-        VisitMutatorRoot(localVisitor, mutator);
-        std::lock_guard<std::mutex> lockGuard(stackMutex);
-        rootSet.emplace_back(std::move(roots));
+        // CArrayList<BaseObject *> roots;
+        // RefFieldVisitor localVisitor = [&roots](RefField<> &root) { roots.emplace_back(root.GetTargetObject()); };
+        // VisitMutatorRoot(localVisitor, mutator);
+        // std::lock_guard<std::mutex> lockGuard(stackMutex);
+        // rootSet.emplace_back(std::move(roots));
     };
     MutatorManager::Instance().FlipMutators(param, enumGlobalRoots, &enumMutatorRoot);
     return rootSet;

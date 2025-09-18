@@ -212,7 +212,7 @@ void InitAndRegisterGlobal(ObjHeader** location, const ObjHeader* initialValue) 
 //
 
 // Reads heap/static data location.
-void ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) RUNTIME_NOTHROW;
+ObjHeader *ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) RUNTIME_NOTHROW;
 // Zeroes heap location.
 void ZeroHeapRef(ObjHeader** location, ObjHeader *thisPtr) RUNTIME_NOTHROW;
 // Zeroes an array.

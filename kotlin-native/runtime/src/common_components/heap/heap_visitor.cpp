@@ -39,6 +39,7 @@ void VisitSTWRoots(const RefFieldVisitor &visitor)
 void VisitConcurrentRoots(const RefFieldVisitor &visitor)
 {
     VisitDynamicConcurrentRoots(visitor);
+    // VisitBaseRoots(visitor);
 }
 
 void VisitWeakRoots(const WeakRefFieldVisitor &visitor)

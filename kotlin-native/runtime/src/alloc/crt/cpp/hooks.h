@@ -1,3 +1,5 @@
+#pragma once
+
 #include "common_components/common_runtime/hooks.h"
 #include "common_interfaces/objects/base_object.h"
 #include "common_interfaces/objects/base_state_word.h"

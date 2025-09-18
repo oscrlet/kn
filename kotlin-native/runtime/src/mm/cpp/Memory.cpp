@@ -29,9 +29,6 @@
 #include "Utils.hpp"
 #include "MemoryDump.hpp"
 
-#include "alloc/crt/cpp/hooks.h"
-#include "common_interfaces/base_runtime.h"
-
 using namespace kotlin;
 
 #ifdef KONAN_OBJC_INTEROP
@@ -157,22 +154,12 @@ static void DumpHeapRef(ObjHeader** location, ObjHeader* thisPtr, const char* ac
     }
 }
 
-extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
-    DumpHeapRef(location, thisPtr, "loaded");
-    if (thisPtr) {
-        common::BaseRuntime::ReadBarrier(thisPtr, location);
-    } else {
-        common::BaseRuntime::ReadBarrier(location);
-    }
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW ObjHeader *ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
+    // DumpHeapRef(location, thisPtr, "loaded");
+    return mm::RefAccessor<false>(location, thisPtr);
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ZeroHeapRef(ObjHeader** location, ObjHeader *thisPtr) {
-    DumpHeapRef(location, thisPtr, "cleared");
-    if (thisPtr) {
-        common::BaseRuntime::WriteBarrier(thisPtr, location, nullptr);
-    } else {
-        common::BaseRuntime::WriteStaticRef(location, nullptr);
-    }
     mm::RefAccessor<false>{location} = nullptr;
 }
 
@@ -192,23 +179,11 @@ extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateStackRef(ObjHeader** lo
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void UpdateHeapRef(ObjHeader** location, const ObjHeader* object, ObjHeader* thisPtr) {
-    DumpHeapRef(location, thisPtr, "stored");
-    if (thisPtr) {
-        common::BaseRuntime::WriteBarrier(thisPtr, location, const_cast<ObjHeader*>(object));
-    } else {
-        common::BaseRuntime::WriteStaticRef(location, const_cast<ObjHeader*>(object));
-    }
-    mm::RefAccessor<false>{location} = const_cast<ObjHeader*>(object);
+    mm::RefAccessor<false>(location, thisPtr) = const_cast<ObjHeader*>(object);
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void UpdateVolatileHeapRef(ObjHeader** location, const ObjHeader* object, ObjHeader* thisPtr) {
-    DumpHeapRef(location, thisPtr, "stored volatile");
-    if (thisPtr) {
-        common::BaseRuntime::WriteBarrier(thisPtr, location, const_cast<ObjHeader*>(object));
-    } else {
-        common::BaseRuntime::WriteStaticRef(location, const_cast<ObjHeader*>(object));
-    }
-    mm::RefAccessor<false>{location}.storeAtomic(const_cast<ObjHeader*>(object), std::memory_order_seq_cst);
+    mm::RefAccessor<false>(location, thisPtr).storeAtomic(const_cast<ObjHeader*>(object), std::memory_order_seq_cst);
 }
 
 extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW OBJ_GETTER(CompareAndSwapVolatileHeapRef, ObjHeader** location, ObjHeader* expectedValue, ObjHeader* newValue) {
