@@ -30,6 +30,14 @@
 #endif  // !NDEBUG
 #endif
 
+#if !defined(ALWAYS_INLINE)
+#ifdef NDEBUG
+#define ALWAYS_INLINE __attribute__((always_inline)) // NOLINT(cppcoreguidelines-macro-usage)
+#else // !defined(ALWAYS_INLINE)
+#define ALWAYS_INLINE // NOLINT(cppcoreguidelines-macro-usage)
+#endif
+#endif
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NO_INLINE __attribute__((noinline))
 

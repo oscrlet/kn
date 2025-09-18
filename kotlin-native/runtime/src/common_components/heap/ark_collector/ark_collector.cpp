@@ -553,6 +553,7 @@ void ArkCollector::PostMarking()
 
     // clear satb buffer when gc finish tracing.
     SatbBuffer::Instance().ClearBuffer();
+    
 
     WVerify::VerifyAfterMark(*this);
 }

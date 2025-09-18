@@ -81,12 +81,14 @@ bitcode {
                 }
             }
             compilerArgs.set(listOfNotNull(
-                "-g",
-                "-gdwarf-2",
+                //"-g",
+                //"-gdwarf-2",
+                "-DNDEBUG",
                 "-Wall",
                 "-Wshadow",
                 //"-Werror",
                 "-Wextra",
+                "-O2",
                 "-pedantic",
                // "-Wno-invalid-offsetof",
                 "-Wno-gnu-statement-expression",
@@ -131,6 +133,7 @@ bitcode {
                 "-Wall",
                 "-Wshadow",
                // "-Werror",
+                "-DNDEBUG",
                 "-Wextra",
                 "-pedantic",
                // "-Wno-invalid-offsetof",
@@ -177,7 +180,8 @@ bitcode {
             compilerArgs.set(listOfNotNull(
                 "-Wall",
                 "-Wshadow",
-              //  "-Werror",
+                "-DNDEBUG",
+                "-Werror",
                 "-Wextra",
                 "-pedantic",
               //  "-Wno-invalid-offsetof",
@@ -224,6 +228,7 @@ bitcode {
             compilerArgs.set(listOfNotNull(
                 "-std=gnu11",
                 "-funwind-tables",
+                "-DNDEBUG",
                 "-W",
                 "-Wall",
                 "-Wwrite-strings",
@@ -367,6 +372,7 @@ bitcode {
             }
 
             compilerArgs.add("-DCMC")
+            compilerArgs.add("-DNDEBUG")
         }
 
         module("custom_alloc") {
