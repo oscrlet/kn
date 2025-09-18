@@ -180,7 +180,6 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
         ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(i));
         collectRoot(visitorFunc, *tmpObj);
     }
-    print("[GC DEBUG] collectRootSetForThread time: %lld ns\n", common::TimeUtil::NanoSeconds() - common::start);
 }
 
 // void collectRootSetGlobals(const common::RefFieldVisitor &visitorFunc) {

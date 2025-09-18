@@ -538,11 +538,8 @@ void ArkCollector::MarkingHeap(const CArrayList<BaseObject *> &collectedRoots)
     TransitionToGCPhase(GCPhase::GC_PHASE_MARK, true);
 
     MarkingRoots(collectedRoots);
-    print("[GC DEBUG] MarkingRoots time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     ProcessFinalizers();
-    print("[GC DEBUG] ProcessFinalizers time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     ExemptFromSpace();
-    print("[GC DEBUG] ExemptFromSpace time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 }
 
 void ArkCollector::PostMarking()
@@ -739,7 +736,6 @@ void ArkCollector::ParallelFixHeap()
             task = getNextTask();
         }
         monitor.WaitAllFinished();
-        print("[GC DEBUG] FixHeapWorker time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     }
 
     {
@@ -754,21 +750,17 @@ void ArkCollector::ParallelFixHeap()
         gcWorker.PostClearTask();
         PostFixHeapWorker::CollectEmptyRegions();
         monitor.WaitAllFinished();
-        print("[GC DEBUG] FixHeapClear time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     }
 }
 
 void ArkCollector::FixHeap()
 {
     TransitionToGCPhase(GCPhase::GC_PHASE_FIX, true);
-    print("[GC DEBUG] TransitionToGCPhase time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     COMMON_PHASE_TIMER("FixHeap");
     OHOS_HITRACE(HITRACE_LEVEL_COMMERCIAL, "CMCGC::FixHeap", "");
     ParallelFixHeap();
-    print("[GC DEBUG] ParallelFixHeap time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 
     WVerify::VerifyAfterFix(*this);
-    print("[GC DEBUG] VerifyAfterFix time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 }
 
 uint64_t start = 0;
@@ -785,49 +777,33 @@ void ArkCollector::DoGarbageCollection()
 
         start = TimeUtil::NanoSeconds();
         ScopedStopTheWorld stw(stwParam);
-        print("[GC DEBUG] STW time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         auto collectedRoots = EnumRoots<EnumRootsPolicy::NO_STW_AND_NO_FLIP_MUTATOR>();
-        print("[GC DEBUG] Enum root time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         MarkingHeap(collectedRoots);
-        print("[GC DEBUG] Marking time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         TransitionToGCPhase(GCPhase::GC_PHASE_FINAL_MARK, true);
         Remark();
-        print("[GC DEBUG] Remark time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         PostMarking();
-        print("[GC DEBUG] PostMarking time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         Preforward();
-        print("[GC DEBUG] Preforward time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         ConcurrentPreforward();
-        print("[GC DEBUG] ConcurrentPreforward time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         // reclaim large objects should after preforward(may process weak ref) and
         // before fix heap(may clear live bit)
         if (isNotYoungGC) {
             CollectLargeGarbage();
-            print("[GC DEBUG] CollectLargeGarbage time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         }
         SweepThreadLocalJitFort();
-        print("[GC DEBUG] SweepThreadLocalJitFort time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 
         CopyFromSpace();
-        print("[GC DEBUG] CopyFromSpace time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         WVerify::VerifyAfterForward(*this);
 
         PrepareFix();
-        print("[GC DEBUG] PrepareFix time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         FixHeap();
-        print("[GC DEBUG] FixHeap time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         if (isNotYoungGC) {
             CollectPinnedGarbage();
-            print("[GC DEBUG] CollectPinnedGarbage time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         }
 
-        print("[GC DEBUG] UpdateAllocateAddr time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 
         TransitionToGCPhase(GCPhase::GC_PHASE_IDLE, true);
-        print("[GC DEBUG] TransitionToGCPhase time: %lld ns\n", TimeUtil::NanoSeconds() - start);
         ClearAllGCInfo();
         CollectSmallSpace();
-        print("[GC DEBUG] CollectSmallSpace time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 
 #if defined(ENABLE_CMC_RB_DFX)
         WVerify::EnableReadBarrierDFX(*this);

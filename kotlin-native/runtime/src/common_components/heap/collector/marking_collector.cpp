@@ -342,7 +342,6 @@ void MarkingCollector::TracingImpl(WorkStack& workStack, bool parallel, bool Rem
         GlobalWorkStackQueue globalQueue;
         WorkStack stack(std::move(workStack));
         ProcessMarkStack(0, nullptr, stack, globalQueue);
-        print("[GC DEBUG] ProcessMarkStack time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     }
 }
 
@@ -415,14 +414,12 @@ void MarkingCollector::MarkingRoots(const CArrayList<BaseObject *> &collectedRoo
 
     WorkStack workStack = NewWorkStack();
     PushRootsToWorkStack(&workStack, collectedRoots);
-    print("[GC DEBUG] PushRootsToWorkStack time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 
     if (Heap::GetHeap().GetGCReason() == GC_REASON_YOUNG) {
         OHOS_HITRACE(HITRACE_LEVEL_COMMERCIAL, "CMCGC::PushRootInRSet", "");
         auto func = [this, &workStack](BaseObject *object) { MarkRememberSetImpl(object, workStack); };
         RegionSpace &space = reinterpret_cast<RegionSpace &>(Heap::GetHeap().GetAllocator());
         space.MarkRememberSet(func);
-        print("[GC DEBUG] MarkRememberSet time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     }
 
     COMMON_PHASE_TIMER("MarkingRoots");
@@ -439,7 +436,6 @@ void MarkingCollector::MarkingRoots(const CArrayList<BaseObject *> &collectedRoo
         COMMON_PHASE_TIMER("Concurrent marking");
        // TracingImpl(workStack, maxWorkers > 0, false);
        TracingImpl(workStack, false, false);
-       print("[GC DEBUG] TracingImpl time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     }
 }
 
@@ -450,18 +446,13 @@ void MarkingCollector::Remark()
     OHOS_HITRACE(HITRACE_LEVEL_COMMERCIAL, "CMCGC::Remark[STW]", "");
     COMMON_PHASE_TIMER("STW re-marking");
     RemarkAndPreforwardStaticRoots(workStack);
-    print("[GC DEBUG] RemarkAndPreforwardStaticRoots time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     // 在这里触发UpdateAllocateAddr
     // UpdateAllocateAddr();
-    print("[GC DEBUG] UpdateAllocateAddr first time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 
     ConcurrentRemark(workStack, maxWorkers > 0); // Mark enqueue
-    print("[GC DEBUG] ConcurrentRemark first time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     TracingImpl(workStack, maxWorkers > 0, true);
-    print("[GC DEBUG] TracingImpl first time: %lld ns\n", TimeUtil::NanoSeconds() - start);
     // MarkAwaitingJitFort(); // Mark awaiting
     ClearWeakStack(maxWorkers > 0);
-    print("[GC DEBUG] ClearWeakStack first time: %lld ns\n", TimeUtil::NanoSeconds() - start);
 
     OHOS_HITRACE(HITRACE_LEVEL_COMMERCIAL, "CMCGC::MarkingRoots END",
         ("mark obejects:" + std::to_string(markedObjectCount_.load(std::memory_order_relaxed))).c_str());

@@ -29,7 +29,6 @@
 #include "common_interfaces/thread/mutator_base.h"
 #include "common_interfaces/base/runtime_param.h"
 
-#define print(...) { printf(__VA_ARGS__); common::start = common::TimeUtil::NanoSeconds(); }
 namespace common {
 extern uint64_t start;
 
