@@ -146,7 +146,6 @@ NO_INLINE RuntimeState* initRuntime() {
   common::RuntimeParam param = common::BaseRuntimeParam::DefaultRuntimeParam();
  // param.gcParam.enableGC = false;
   param.gcParam.enableStwGC = false;
-  param.heapParam.heapSize = 4 * common::MB;
   // 调整crt的gc阈值
   // param.gcParam.gcInterval = 100000;
   // param.gcParam.garbageThreshold = 0.1;

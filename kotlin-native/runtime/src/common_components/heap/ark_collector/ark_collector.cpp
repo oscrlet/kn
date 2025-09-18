@@ -868,8 +868,8 @@ void ArkCollector::DoGarbageCollection()
     TransitionToGCPhase(GCPhase::GC_PHASE_IDLE, true);
     ClearAllGCInfo();
     RegionSpace &space = reinterpret_cast<RegionSpace &>(theAllocator_);
-    space.DumpAllRegionSummary("Peak GC log");
-    space.DumpAllRegionStats("region statistics when gc ends");
+    // space.DumpAllRegionSummary("Peak GC log");
+    // space.DumpAllRegionStats("region statistics when gc ends");
     CollectSmallSpace();
 }
 

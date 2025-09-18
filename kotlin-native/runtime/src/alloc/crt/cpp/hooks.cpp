@@ -120,7 +120,7 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
     auto rootSet = kotlin::mm::ThreadRootSet(thread);
         // printf frames.
     // printf("Print Frames before collectRoots:\n");
-    uintptr_t frameSize = 8 * sizeof(uintptr_t);
+    uintptr_t frameSize = 50;
     FrameOverlay *currentFrame = rootSet.stack_.currentFrame_;
     //PrintFrame(thread, frameSize);
     // uintptr_t fpStart = 0;

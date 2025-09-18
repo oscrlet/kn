@@ -138,7 +138,7 @@ extern "C" RUNTIME_NOTHROW void InitAndRegisterGlobal(ObjHeader** location, cons
 extern "C" const MemoryModel CurrentMemoryModel = MemoryModel::kExperimental;
 
 
-static void DumpHeapRef(ObjHeader** location, ObjHeader* thisPtr, const char* action) {
+[[maybe_unused]] static void DumpHeapRef(ObjHeader** location, ObjHeader* thisPtr, const char* action) {
     if (true) {
         return;
     }
