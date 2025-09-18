@@ -149,8 +149,7 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
 
     // TODO: These should be set by the plugin users.
     private val DEFAULT_CPP_FLAGS = listOfNotNull(
-            //"-gdwarf-2".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.isNativeRuntimeDebugInfoEnabled", false) },
-            "-gdwarf-2",
+            "-gdwarf-2".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.isNativeRuntimeDebugInfoEnabled", false) },
             "-std=c++17",
             "-Werror",
             "-O2",

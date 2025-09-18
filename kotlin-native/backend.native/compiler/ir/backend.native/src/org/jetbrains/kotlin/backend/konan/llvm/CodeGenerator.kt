@@ -25,8 +25,6 @@ import org.jetbrains.kotlin.konan.ForeignExceptionMode
 import org.jetbrains.kotlin.konan.target.CompilerOutputKind
 
 
-private var insertCount = 0
-
 internal class CodeGenerator(override val generationState: NativeGenerationState) : ContextUtils {
     fun addFunction(proto: LlvmFunctionProto): LlvmCallable =
             proto.createLlvmFunction(context, llvm.module)
@@ -1224,10 +1222,6 @@ internal abstract class FunctionGenerationContext(
         return debugLocation
     }
 
-    internal fun setDebugLocationDirectlly(debugLocation: DILocationRef) {
-        currentPositionHolder.setBuilderDebugLocation(debugLocation)
-    }
-
     fun indirectBr(address: LLVMValueRef, destinations: Collection<LLVMBasicBlockRef>): LLVMValueRef? {
         val indirectBr = LLVMBuildIndirectBr(builder, address, destinations.size)
         destinations.forEach { LLVMAddDestination(indirectBr, it) }
@@ -1405,25 +1399,13 @@ internal abstract class FunctionGenerationContext(
              */
             startLocation?.let { debugLocation(it, it) }
 
-            // if (startLocation == null && slotToVariableLocation.isNotEmpty()) {
-            //     memScoped {
-            //       slotToVariableLocation.forEach { (slot, variable) ->
-            //         setDebugLocationDirectlly(variable.location!!) 
-            //       }
-            //     } 
-            // }
-
+            // Function calls need to have !dbg for proper debug info.
+            // If the function has a subprogram, use it to set the debug location.
             val funcScope = function.getDebugInfoSubprogram() as? DIScopeOpaqueRef
             val location = funcScope?.let { LocationInfo(it, 0, 0) }
             location?.let {
                 debugLocation(it, it)
             }
-
-             var allEmpty = false
-
-            // if (startLocation == null && !slotToVariableLocation.isNotEmpty()) {
-            //     allEmpty = true
-            // }
 
             if (needsRuntimeInit || switchToRunnable) {
                 check(!forbidRuntime) { "Attempt to init runtime where runtime usage is forbidden" }
@@ -1438,32 +1420,6 @@ internal abstract class FunctionGenerationContext(
                 check(!setCurrentFrameIsCalled)
             }
             if (!forbidRuntime && needSafePoint) {
-                //insertCount++
-                //if (insertCount in 3400..3500 && allEmpty) {
-                if (insertCount == 3455 && allEmpty) {
-                    var debugloc = LLVMBuilderGetCurrentFunction(builder)
-                    println("current insert range is 3400 to 3500")
-                    println("insertCount is $insertCount")
-                    println("Debug location at safe point: $debugloc")
-                    
-                    //println("generationState type is ${generationState::class.qualifiedName}")
-                    println("debuginfo type is ${generationState.debugInfo::class.qualifiedName}")
-                    
-                    println("[lkt] function name is ${function.name}")
-                    println("[lkt] build.endloc : $builder.endLocation")
-                   
-                    val fileEntry = irFunction?.fileOrNull?.fileEntry.takeIf {
-                        context.shouldContainLocationDebugInfo()
-                    }
-                   
-                //    val funcScope : DIScopeOpaqueRef = function.getDebugInfoSubprogram() as DIScopeOpaqueRef
-                //    val location = LocationInfo(funcScope, 0, 0)
-                //    println("location is $location")
-                //    val loc_Test = LocationInfo(subprogram as DIScopeOpaqueRef, 0, 0)
-                //     println("subloc_Testprogram is $loc_Test")
-
-                    call(llvm.Kotlin_mm_safePointFunctionPrologue, emptyList())
-                }
                 call(llvm.Kotlin_mm_safePointFunctionPrologue, emptyList())
             }
             resetDebugLocation()
@@ -1518,7 +1474,8 @@ internal abstract class FunctionGenerationContext(
     @Suppress("UNCHECKED_CAST")
     protected fun onReturn() {
         if (startLocation == null) {
-            insertCount++
+            // Function calls need to have !dbg for proper debug info.
+            // If the function has a subprogram, use it to set the debug location.
             val funcScope = function.getDebugInfoSubprogram() as? DIScopeOpaqueRef
             val location = funcScope?.let { LocationInfo(it, 0, 0) }
             location?.let {
