@@ -60,17 +60,15 @@ bool is_valid_pointer(const void* addr) {
 }
 
 bool collectRoot(const common::RefFieldVisitor &visitorFunc, ObjHeader* &object) noexcept {
-    if (!common::Heap::IsHeapAddress(object) || !reinterpret_cast<common::BaseObject* >(object)->IsValidObject()) {
+    auto refField = reinterpret_cast<common::RefField<>&>(object);
+    if (!common::Heap::IsHeapAddress(object) || !refField.GetTargetObject()->IsValidObject()) {
         return false;
-    }
-    if (object->heap()) {
-        visitorFunc(reinterpret_cast<common::RefField<>&>(object));
-    } else {
-        // Each permanent and stack object has own entry in the root set, so it's okay to only process objects in heap.
-        // Traits::processInMark(markQueue, object);
-        // RuntimeAssert(!object->has_meta_object(), "Non-heap object %p may not have an extra object data", object);
-        // TODO: 这里的逻辑需要补充。
-    }
+    } 
+    visitorFunc(reinterpret_cast<common::RefField<>&>(object));
+    // Each permanent and stack object has own entry in the root set, so it's okay to only process objects in heap.
+    // Traits::processInMark(markQueue, object);
+    // RuntimeAssert(!object->has_meta_object(), "Non-heap object %p may not have an extra object data", object);
+    // TODO: 这里的逻辑需要补充。
     return true;
 }
 
@@ -255,34 +253,39 @@ void processFieldInMark(const RefFieldVisitor &visitor, ObjHeader* object, ObjHe
 }
 
 void processArrayInMark(const RefFieldVisitor &visitor, ObjHeader *object) {
-    ArrayHeader *arrayHeader = reinterpret_cast<ArrayHeader*>(object);
-    kotlin::traverseArrayOfObjectsElements(arrayHeader, [=] (auto elemAccessor) noexcept {
-       if (ObjHeader** elem = elemAccessor.direct().location()) {
-            if (*elem) {
-                processFieldInMark(visitor, arrayHeader->obj(), *elem);
-            }
-        }
-    });
+    std::abort();
+    // auto *objHeader = reinterpret_cast<ObjHeader*>(object);
+    // // NB: note that we should not use traverseArrayOfObjectsElements because we should avoid 
+    // // traversing primitive fields in the array
+    // kotlin::traverseObjectFields(objHeader, [=] (auto elemAccessor) noexcept {
+    //    if (ObjHeader** elem = elemAccessor.direct().location()) {
+    //         if (*elem) {
+    //             processFieldInMark(visitor, objHeader, *elem);
+    //         }
+    //     }
+    // });
 }
 
 void processObjectInMark(const RefFieldVisitor &visitor, ObjHeader *object) {
-    kotlin::traverseClassObjectFields(object, [=] (auto fieldAccessor) noexcept {
-        if (ObjHeader** field = fieldAccessor.direct().location()) {
-            if (*field) {
-                processFieldInMark(visitor, object, *field);
-            }
-        }
-    });
+    std::abort();
+    // kotlin::traverseClassObjectFields(object, [=] (auto fieldAccessor) noexcept {
+    //     if (ObjHeader** field = fieldAccessor.direct().location()) {
+    //         if (*field) {
+    //             processFieldInMark(visitor, object, *field);
+    //         }
+    //     }
+    // });
 }
 
 void KNBaseObjectOperator::ForEachRefField(const BaseObject *crtObject, const RefFieldVisitor &visitor) const {
-    ObjHeader *object = const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(crtObject));
-    auto process = object->type_info()->processObjectInMark;
-    if (process == Kotlin_processArrayInMark) {
-        processArrayInMark(visitor, object);
-    } else if (process == Kotlin_processObjectInMark) {
-        processObjectInMark(visitor, object);
-    }
+    auto* objHeader = const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(crtObject));
+    kotlin::traverseObjectFields(objHeader, [=](auto elemAccessor) noexcept {
+        if (ObjHeader** elem = elemAccessor.direct().location()) {
+            if (*elem) {
+                processFieldInMark(visitor, objHeader, *elem);
+            }
+        }
+    });
 }
 
 } // namespace common
