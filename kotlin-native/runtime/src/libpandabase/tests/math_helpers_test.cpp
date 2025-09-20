@@ -18,8 +18,6 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-#define NDEBUG
-
 namespace panda::helpers::math::test {
 
 HWTEST(MathHelpers, GetIntLog2, testing::ext::TestSize.Level0)

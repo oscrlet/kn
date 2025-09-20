@@ -32,8 +32,6 @@
 #include <sstream>
 #include <unordered_set>
 
-#define NDEBUG
-
 /*
  * Heap Verify:
  * Checks heap invariants after each GC mark, copy and fix phase. During the check, the world is stopped.

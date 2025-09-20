@@ -20,8 +20,6 @@
 #include <cstdint>
 #include <iostream>
 
-// #define NDEBUG
-
 // Windows platform will define ERROR, cause compiler error
 #ifdef ERROR
 #undef ERROR
