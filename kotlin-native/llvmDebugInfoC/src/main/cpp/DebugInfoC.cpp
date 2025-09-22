@@ -242,6 +242,15 @@ void DIFunctionAddSubprogram(LLVMValueRef fn, DISubprogramRef sp) {
   }
 }
 
+DISubprogramRef DIFunctionGetSubprogram(LLVMValueRef fn) {
+  auto f = llvm::cast<llvm::Function>(llvm::unwrap(fn));
+  auto dsp = f->getSubprogram();
+  if (!dsp->describes(f)) {
+    fprintf(stderr, "error!!! f:%s, sp:%s\n", f->getName().str().c_str(), dsp->getLinkageName().str().c_str());
+  }
+  return llvm::wrap(dsp);
+}
+
 DILocalVariableRef DICreateAutoVariable(DIBuilderRef builder, DIScopeOpaqueRef scope, const char *name, DIFileRef file, unsigned line, DITypeOpaqueRef type) {
   return llvm::wrap(llvm::unwrap(builder)->createAutoVariable(
     llvm::unwrap(scope),

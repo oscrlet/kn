@@ -1343,14 +1343,15 @@ internal abstract class FunctionGenerationContext(
         positionAtEnd(entryBb)
     }
 
+    @Suppress("UNCHECKED_CAST")
     internal fun epilogue() {
         val needCleanupLandingpadAndLeaveFrame = this.needCleanupLandingpadAndLeaveFrame
 
         appendingTo(prologueBb) {
-            val slots = if (needSlotsPhi || needCleanupLandingpadAndLeaveFrame)
-                LLVMBuildArrayAlloca(builder, kObjHeaderPtr, llvm.int32(slotCount), "")!!
-            else
-                kNullObjHeaderPtrPtr
+             val slots = if (needSlotsPhi || needCleanupLandingpadAndLeaveFrame)
+                 LLVMBuildArrayAlloca(builder, kObjHeaderPtr, llvm.int32(slotCount), "")!!
+             else
+                 kNullObjHeaderPtrPtr
             if (needSlots || needCleanupLandingpadAndLeaveFrame) {
                 check(!forbidRuntime) { "Attempt to start a frame where runtime usage is forbidden" }
                 // Zero-init slots.
@@ -1361,7 +1362,7 @@ internal abstract class FunctionGenerationContext(
             memScoped {
                 slotToVariableLocation.forEach { (slot, variable) ->
                     val expr = longArrayOf(DwarfOp.DW_OP_plus_uconst.value,
-                            runtime.pointerSize * slot.toLong()).toCValues()
+                            runtime.pointerSize * slot.toLong()).toCValues()  
                     DIInsertDeclaration(
                             builder       = generationState.debugInfo.builder,
                             value         = slots,
@@ -1397,6 +1398,15 @@ internal abstract class FunctionGenerationContext(
              * places with inconsistent stack layout. So we setup debug info only for this part of bb.
              */
             startLocation?.let { debugLocation(it, it) }
+
+            // Function calls need to have !dbg for proper debug info.
+            // If the function has a subprogram, use it to set the debug location.
+            val funcScope = function.getDebugInfoSubprogram() as? DIScopeOpaqueRef
+            val location = funcScope?.let { LocationInfo(it, 0, 0) }
+            location?.let {
+                debugLocation(it, it)
+            }
+
             if (needsRuntimeInit || switchToRunnable) {
                 check(!forbidRuntime) { "Attempt to init runtime where runtime usage is forbidden" }
                 call(llvm.initRuntimeIfNeeded, emptyList())
@@ -1461,7 +1471,17 @@ internal abstract class FunctionGenerationContext(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     protected fun onReturn() {
+        if (startLocation == null) {
+            // Function calls need to have !dbg for proper debug info.
+            // If the function has a subprogram, use it to set the debug location.
+            val funcScope = function.getDebugInfoSubprogram() as? DIScopeOpaqueRef
+            val location = funcScope?.let { LocationInfo(it, 0, 0) }
+            location?.let {
+                debugLocation(it, it)
+            }
+        }
         releaseVars()
         handleEpilogueExperimentalMM()
     }
