@@ -25,7 +25,6 @@
 #include <string>
 #include <thread>
 
-#ifdef CMC
 #include "common_interfaces/base_runtime.h"
 #include "common_interfaces/thread/thread_holder.h"
 #include "common_interfaces/heap/heap_allocator.h"
@@ -94,27 +93,6 @@ enum GlobalRuntimeStatus {
 };
 
 std::atomic<GlobalRuntimeStatus> globalRuntimeStatus = kGlobalRuntimeUninitialized;
-
-std::map<std::string, Level> logLevels = {
-    {"debug", Level::DEBUG},
-    {"info", Level::INFO},
-    {"fatal", Level::FATAL},
-    {"fatal_without_abort", Level::FATAL_WITHOUT_ABORT},
-    {"verbose", Level::VERBOSE},
-    {"warn", Level::WARN},
-    {"error", Level::ERROR},
-};
-
-inline static void InitLog() {
-  const char* env = std::getenv("CRT_LOG_LEVEL");
-  std::string logLevelStr = env != nullptr ? std::string(env) : "error";
-  std::transform(logLevelStr.begin(), logLevelStr.end(), logLevelStr.begin(), ::tolower);
-  common::LogOptions options = {
-    .level = logLevels[std::string(env != nullptr ? env : "error")],
-    .component = static_cast<ComponentMark>(Component::ALL),
-  };
-  common::Log::Initialize(options);
-}
 
 std::map<std::string, Level> logLevels = {
     {"debug", Level::DEBUG},

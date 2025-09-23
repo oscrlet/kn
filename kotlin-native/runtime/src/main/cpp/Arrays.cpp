@@ -91,7 +91,6 @@ PERFORMANCE_INLINE void Kotlin_Array_set_value(KRef thiz, KInt index, KConstRef 
   ArrayHeader* array = thiz->array();
   if (BoundsCheck)
     boundsCheck(array, index);
-  mutabilityCheck(thiz);
   UpdateHeapRef(ArrayAddressOfElementAt(array, index), value, array->obj());
 }
 
@@ -170,7 +169,6 @@ void Kotlin_Array_copyImpl(KConstRef thiz, KInt fromIndex,
                         *ArrayAddressOfElementAt(array, fromIndex + index), destinationArray->obj());
       }
     }
-  }
 }
 
 // Arrays.kt
