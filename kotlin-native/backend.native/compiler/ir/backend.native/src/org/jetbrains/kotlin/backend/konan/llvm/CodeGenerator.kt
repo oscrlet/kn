@@ -772,7 +772,7 @@ internal abstract class FunctionGenerationContext(
             require(!isVolatile) { "Stack ref update can't be volatile"}
             call(llvm.updateStackRefFunction, listOf(address, value))
         } else {
-            if (isVolatile && context.memoryModel == MemoryModel.EXPERIMENTAL) {
+            if (isVolatile) {
                 call(llvm.UpdateVolatileHeapRef, listOf(address, value, thisPtr))
             } else {
                 call(llvm.updateHeapRefFunction, listOf(address, value, thisPtr))

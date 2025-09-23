@@ -1692,13 +1692,10 @@ internal class CodeGeneratorVisitor(
             value.symbol.owner.correspondingPropertySymbol?.owner?.isConst == true -> {
                 // TODO: probably can be removed, as they are inlined.
                 thisPtr = codegen.kNullObjHeaderPtr
-                return evaluateConst(value.symbol.owner.initializer?.expression as IrConst<*>).llvm
+                return evaluateConst(value.symbol.owner.initializer?.expression as IrConst).llvm
             }
             else -> {
                 thisPtr = codegen.kNullObjHeaderPtr
-                if (value.symbol.owner.isGlobalNonPrimitive(context)) {
-                    functionGenerationContext.checkGlobalsAccessible(currentCodeContext.exceptionHandler)
-                }
                 fieldAddress = staticFieldPtr(value.symbol.owner, functionGenerationContext)
                 alignment = generationState.llvmDeclarations.forStaticField(value.symbol.owner).alignment
             }
@@ -2877,8 +2874,7 @@ internal fun NativeGenerationState.generateRuntimeConstantsModule() : LLVMModule
     setRuntimeConstGlobal("Kotlin_needDebugInfo", llvm.constInt32(if (shouldContainDebugInfo()) 1 else 0))
     setRuntimeConstGlobal("Kotlin_runtimeAssertsMode", llvm.constInt32(config.runtimeAssertsMode.value))
     setRuntimeConstGlobal("Kotlin_disableMmap", llvm.constInt32(if (config.disableMmap) 1 else 0))
-    setRuntimeConstGlobal("Kotlin_disableAllocatorOverheadEstimate", llvm.constInt32(if (config.disableAllocatorOverheadEstimate) 1 else 0))
-
+   
     val runtimeLogs = ConstArray(llvm.int32Type, LoggingTag.entries.sortedBy { it.ord }.map {
         config.runtimeLogs[it]!!.ord.let { llvm.constInt32(it) }
     })
