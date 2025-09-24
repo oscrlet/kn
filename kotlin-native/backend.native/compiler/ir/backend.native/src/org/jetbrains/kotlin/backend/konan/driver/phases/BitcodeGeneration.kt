@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
-import org.jetbrains.kotlin.ir.util.dump
 
 internal val CreateLLVMDeclarationsPhase = createSimpleNamedCompilerPhase<NativeGenerationState, IrModuleFragment>(
         name = "CreateLLVMDeclarations",
@@ -76,8 +75,6 @@ internal val CodegenPhase = createSimpleNamedCompilerPhase<NativeGenerationState
             )
 
             input.irModule.acceptVoid(CodeGeneratorVisitor(generationState, input.irModule.irBuiltins, input.lifetimes))
-
-            // println(input.irModule.dump())
 
             if (generationState.hasDebugInfo())
                 DIFinalize(generationState.debugInfo.builder)

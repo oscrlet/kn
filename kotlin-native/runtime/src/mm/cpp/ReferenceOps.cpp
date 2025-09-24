@@ -4,7 +4,6 @@
  */
 
 #include "ReferenceOps.hpp"
-#include <cstdint>
 #include "ThreadData.hpp"
 #include "ThreadRegistry.hpp"
 
