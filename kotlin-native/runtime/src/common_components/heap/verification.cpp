@@ -374,6 +374,11 @@ public:
             } else {
                 refObj = field.GetTargetObject();
             }
+            if (Heap::GetHeap().GetGCPhase() == GCPhase::GC_PHASE_FIX) {
+                if (refObj->IsForwarded() || refObj->IsForwarding()) {
+                    std::abort();
+                }
+            }
             // If it is forwarded, its toVersion must have been traversed during
             // EnumRoot, so it must have been marked. There is no need for me to
             // check it, nor to push it into the mark stack.

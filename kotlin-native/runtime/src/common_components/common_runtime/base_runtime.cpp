@@ -173,8 +173,20 @@ void BaseRuntime::WriteRoot(void *obj)
 void BaseRuntime::WriteBarrier(void* obj, void* field, void* ref)
 {
     DCHECK_CC(field != nullptr);
+    if (ref == nullptr) {
+        // No need to do write barrier for null reference.
+        return;
+    }
     Heap::GetBarrier().WriteBarrier(reinterpret_cast<BaseObject*>(obj),
         *reinterpret_cast<RefField<>*>(field), reinterpret_cast<BaseObject*>(ref));
+}
+
+void BaseRuntime::WriteStaticRef(void* field, void* ref)
+{
+    DCHECK_CC(field != nullptr);
+    if (IsStaticBarrierApplied()) {
+        Heap::GetBarrier().WriteStaticRef(*reinterpret_cast<RefField<>*>(field), reinterpret_cast<BaseObject*>(ref));
+    }
 }
 
 void* BaseRuntime::ReadBarrier(void* obj, void* field)

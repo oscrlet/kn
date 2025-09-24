@@ -286,11 +286,7 @@ public:
         MutatorManager::Instance().StartTheWorld();
     }
 
-// #if FIX_LD
-    uint64_t GetElapsedTime() const { return 0; }
-// #else
-//     uint64_t GetElapsedTime() const { return TimeUtil::NanoSeconds() - startTime_; }
-// #endif
+    uint64_t GetElapsedTime() const { return TimeUtil::NanoSeconds() - startTime_; }
 
 private:
     uint64_t startTime_ = 0;

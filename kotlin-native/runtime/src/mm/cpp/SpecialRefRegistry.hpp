@@ -175,7 +175,7 @@ class SpecialRefRegistry : private Pinned {
                         // We avoid it in all other cases, as the guard can be quite an overhead: e.g. taking the GC lock.
                         // We also drop the guard if CAS below fails and we retry. This way, the GC will be allowed to take the lock
                         // sooner. This does, however, hurt a thread that failed to decrement, because it may have to wait for the GC.
-                        guard = gc::barriers::SpecialRefReleaseGuard{mm::DirectRefAccessor{obj_}};
+                        guard = gc::barriers::SpecialRefReleaseGuard{mm::DirectRefAccessor{&obj_}};
                     }
                     if (rc_.compare_exchange_strong(rcBefore, rcBefore - 1, std::memory_order_relaxed)) break;
                 }

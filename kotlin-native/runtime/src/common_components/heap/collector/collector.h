@@ -30,6 +30,8 @@
 #include "common_interfaces/base/runtime_param.h"
 
 namespace common {
+extern uint64_t start;
+
 enum CollectorType {
     NO_COLLECTOR = 0,   // No Collector
     PROXY_COLLECTOR,           // Proxy of Collector
@@ -101,7 +103,6 @@ public:
 
     virtual void PushBackAllocateAddr(const BaseObject* obj) = 0;
     virtual bool IsInAllocateAddr(const BaseObject* obj) = 0;
-    virtual void UpdateAllocateAddr() = 0;
 
 
 protected:

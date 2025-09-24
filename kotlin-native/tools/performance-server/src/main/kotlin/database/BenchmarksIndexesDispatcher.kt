@@ -50,7 +50,7 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
                 "size": 1000,
                 "query": {
                     "bool": {
-                        "must": [ 
+                        "must": [
                             { "match": { "buildNumber": "$buildNumber" } }
                         ]
                     }
@@ -110,7 +110,7 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
                 "size": ${samples.size * buildsCountToShow},
                 "query": {
                     "bool": {
-                        "must": [ 
+                        "must": [
                             ${filteredBuilds.str { builds ->
             """
                             { "terms" : { "buildNumber" : [${builds.map { "\"${it.second}\"" }.joinToString()}] } },""" }
@@ -124,17 +124,17 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
                                             { "match": { "benchmarks.metric": "$metricName" } },
                                             { "terms": { "benchmarks.name": [${samples.joinToString { "\"$it\"" }}] }}
                                         ]
-                                    }  
+                                    }
                                 }, "inner_hits": {
-                                    "size": ${samples.size}, 
-                                    "_source": ["benchmarks.name", 
+                                    "size": ${samples.size},
+                                    "_source": ["benchmarks.name",
                                     "benchmarks.${if (normalize) "normalizedScore" else "score"}"]
-                                }    
+                                }
                             }
                         }
                     ]
                 }
-            } 
+            }
         }"""
 
         return getIndex(featureValue).search(queryDescription, listOf("hits.hits._source", "hits.hits.inner_hits"))
@@ -177,7 +177,7 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
 
     // Get failures number happned during build.
     fun getFailuresNumber(featureValue: String = "", buildNumbers: Iterable<String>? = null): Promise<Map<String, Int>> {
-        val queryDescription = """ 
+        val queryDescription = """
             {
                 "_source": false,
                 ${featureFilter.str {
@@ -192,8 +192,8 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
             """
                 "aggs" : {
                     "builds": {
-                        "filters" : { 
-                            "filters": { 
+                        "filters" : {
+                            "filters": {
                                 ${builds.map { "\"$it\": { \"match\" : { \"buildNumber\" : \"$it\" }}" }
                     .joinToString(",\n")}
                             }
@@ -206,7 +206,7 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
                             },
                             "aggs" : {
                                 "metric_samples": {
-                                    "filters" : { 
+                                    "filters" : {
                                         "filters": { "samples": { "match": { "benchmarks.status": "FAILED" } } }
                                     },
                                     "aggs" : {
@@ -277,7 +277,7 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
             "match": { "benchmarks.metric": "$metricName" }
             """
         else """
-            "bool": { 
+            "bool": {
                 "must": { "match": { "benchmarks.metric": "$metricName" } },
                 "must_not": [ ${excludeNames.map { """{ "match_phrase" : { "benchmarks.name" : "$it" } }"""}.joinToString() } ]
             }
@@ -297,8 +297,8 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
             """
                 "aggs" : {
                     "builds": {
-                        "filters" : { 
-                            "filters": { 
+                        "filters" : {
+                            "filters": {
                                 ${builds.map { "\"${it.second}\": { \"match\" : { \"buildNumber\" : \"${it.second}\" }}" }
                     .joinToString(",\n")}
                             }
@@ -311,7 +311,7 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
                             },
                             "aggs" : {
                                 "metric_samples": {
-                                    "filters" : { 
+                                    "filters" : {
                                         "filters": { "samples": { $filterBenchmarks } }
                                     },
                                     "aggs" : {
@@ -335,7 +335,7 @@ class BenchmarksIndexesDispatcher(connector: ElasticSearchConnector, val feature
                                     }
                                 }
                             }
-                        
+
                            ${filteredBuilds.str {
             """ }
                         }"""

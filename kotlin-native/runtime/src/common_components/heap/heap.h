@@ -36,6 +36,16 @@ class FinalizerProcessor;
 class CollectorResources;
 using MemoryReduceDegree = common::MemoryReduceDegree;
 
+inline bool IsKotlin()
+{
+    return true;
+}
+
+inline bool IsStaticBarrierApplied()
+{
+    return false;
+}
+
 class Heap {
 public:
     // These need to keep same with that in `RegionDesc`
@@ -146,6 +156,9 @@ public:
     static bool IsTaggedObject(HeapAddress addr)
     {
         // relies on the definition of ArkTs
+        if (IsKotlin()) {
+            return true;
+        }
         static constexpr uint64_t TAG_BITS_SHIFT = 48;
         static constexpr uint64_t TAG_MARK = 0xFFFFULL << TAG_BITS_SHIFT;
         static constexpr uint64_t TAG_SPECIAL = 0x02ULL;

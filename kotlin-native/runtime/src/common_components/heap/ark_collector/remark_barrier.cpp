@@ -124,8 +124,8 @@ void RemarkBarrier::WriteBarrier(BaseObject* obj, RefField<false>& field, BaseOb
 void RemarkBarrier::WriteStaticRef(RefField<false>& field, BaseObject* ref) const
 {
     std::atomic_thread_fence(std::memory_order_seq_cst);
-    RefField<> newField(ref);
-    field.SetFieldValue(newField.GetFieldValue());
+    // RefField<> newField(ref);
+    // field.SetFieldValue(newField.GetFieldValue());
 }
 
 void RemarkBarrier::WriteStruct(BaseObject* obj, HeapAddress dst, size_t dstLen, HeapAddress src, size_t srcLen) const

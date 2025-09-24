@@ -4,6 +4,7 @@
  */
 
 #include "Memory.h"
+#include <cstdio>
 #include "MemoryPrivate.hpp"
 
 #include "Allocator.hpp"
@@ -27,8 +28,6 @@
 #include "ThreadState.hpp"
 #include "Utils.hpp"
 #include "MemoryDump.hpp"
-
-#include "alloc/crt/cpp/hooks.h"
 
 using namespace kotlin;
 
@@ -136,7 +135,28 @@ extern "C" RUNTIME_NOTHROW void InitAndRegisterGlobal(ObjHeader** location, cons
     }
 }
 
-extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void ZeroHeapRef(ObjHeader** location) {
+[[maybe_unused]] static void DumpHeapRef(ObjHeader** location, ObjHeader* thisPtr, const char* action) {
+    if (true) {
+        return;
+    }
+    printf("%s location %ld ", action, (long)location);
+
+    if (*location == nullptr) {
+        printf("to empty ");
+    } else {
+        printf("of type %s ", (*location)->type_info()->fqName().c_str());
+    }
+    if (thisPtr) {
+        printf("in %ld with type %s\n", (long)thisPtr, thisPtr->type_info()->fqName().c_str());
+    }
+}
+
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW ObjHeader *ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
+    // DumpHeapRef(location, thisPtr, "loaded");
+    return mm::RefAccessor<false>(location, thisPtr);
+}
+
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ZeroHeapRef(ObjHeader** location, ObjHeader *thisPtr) {
     mm::RefAccessor<false>{location} = nullptr;
 }
 
@@ -155,12 +175,12 @@ extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateStackRef(ObjHeader** lo
     mm::StackRefAccessor{location} = const_cast<ObjHeader*>(object);
 }
 
-extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateHeapRef(ObjHeader** location, const ObjHeader* object) {
-    mm::RefAccessor<false>{location} = const_cast<ObjHeader*>(object);
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void UpdateHeapRef(ObjHeader** location, const ObjHeader* object, ObjHeader* thisPtr) {
+    mm::RefAccessor<false>(location, thisPtr) = const_cast<ObjHeader*>(object);
 }
 
-extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateVolatileHeapRef(ObjHeader** location, const ObjHeader* object) {
-    mm::RefAccessor<false>{location}.storeAtomic(const_cast<ObjHeader*>(object), std::memory_order_seq_cst);
+extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void UpdateVolatileHeapRef(ObjHeader** location, const ObjHeader* object, ObjHeader* thisPtr) {
+    mm::RefAccessor<false>(location, thisPtr).storeAtomic(const_cast<ObjHeader*>(object), std::memory_order_seq_cst);
 }
 
 extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW OBJ_GETTER(CompareAndSwapVolatileHeapRef, ObjHeader** location, ObjHeader* expectedValue, ObjHeader* newValue) {
@@ -455,20 +475,11 @@ bool kotlin::FinalizersThreadIsRunning() noexcept {
 }
 
 RUNTIME_NOTHROW ALWAYS_INLINE extern "C" void Kotlin_processObjectInMark(void* state, ObjHeader* object) {
-// #ifndef CRT_ALLOCATOR
-//     gc::GC::processObjectInMark(state, object);
-// #else
-    common::processObjectInMark(state, object);
-// #endif
+    gc::GC::processObjectInMark(state, object);
 }
 
 RUNTIME_NOTHROW ALWAYS_INLINE extern "C" void Kotlin_processArrayInMark(void* state, ObjHeader* object) {
-// #ifndef CRT_ALLOCATOR
-    // gc::GC::processArrayInMark(state, object->array());
-// #else
-    // 这里需要看一下如何把逻辑剥离出来.
-    common::processArrayInMark(state, object->array());
-// #endif
+    gc::GC::processArrayInMark(state, object->array());
 }
 RUNTIME_NOTHROW extern "C" void Kotlin_processEmptyObjectInMark(void* state, ObjHeader* object) {
     // Empty object. Nothing to do.
@@ -509,3 +520,4 @@ void kotlin::initObjectPool() noexcept {
 void kotlin::compactObjectPoolInCurrentThread() noexcept {
     alloc::compactObjectPoolInCurrentThread();
 }
+

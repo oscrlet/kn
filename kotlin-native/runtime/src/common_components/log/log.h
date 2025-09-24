@@ -236,7 +236,8 @@ private:
 #else  // NDEBUG
 #define DLOG(type, format...) (void)(0)
 #endif  // NDEBUG
-#define VLOG(level, format...) LOG_GC(level) << FormatLog(format)
+// #define VLOG(level, format...) LOG_GC(level) << FormatLog(format...)
+#define VLOG(level, format, ...) LOG_GC(level) << FormatLog(format, ##__VA_ARGS__)
 
 #define COMMON_PHASE_TIMER(...) Timer ARK_pt_##__LINE__(__VA_ARGS__)
 

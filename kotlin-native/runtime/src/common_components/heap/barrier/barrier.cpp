@@ -55,7 +55,7 @@ void Barrier::WriteStruct(BaseObject* obj, HeapAddress dst, size_t dstLen, HeapA
 void Barrier::WriteStaticRef(RefField<false>& field, BaseObject* ref) const
 {
     DLOG(BARRIER, "write (barrier) static ref@%p: %p", &field, ref);
-    field.SetTargetObject(ref);
+    // field.SetTargetObject(ref);
 }
 
 BaseObject* Barrier::ReadRefField(BaseObject* obj, RefField<false>& field) const

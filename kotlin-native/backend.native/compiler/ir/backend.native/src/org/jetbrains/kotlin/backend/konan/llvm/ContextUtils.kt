@@ -415,8 +415,9 @@ internal class CodegenLlvmHelpers(private val generationState: NativeGenerationS
         LLVMSetTarget(module, runtime.target)
     }
 
-    private fun importRtFunction(name: String, returnsObjectType: Boolean) = importFunction(name, runtime.llvmModule, returnsObjectType)
+    private fun importRtFunction(name: String, returnsObjectType: Boolean = false) = importFunction(name, runtime.llvmModule, returnsObjectType)
 
+    val readHeapRefFunction = importRtFunction("ReadHeapRef")
     val allocInstanceFunction = importRtFunction("AllocInstance", true)
     val allocArrayFunction = importRtFunction("AllocArrayInstance", true)
     val initAndRegisterGlobalFunction = importRtFunction("InitAndRegisterGlobal", false)

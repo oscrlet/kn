@@ -9,10 +9,15 @@
 #include "Heap.hpp"
 
 #include "Types.h"
+#include "alloc/crt/cpp/hooks.h"
 
 using namespace kotlin;
 
-alloc::Allocator::ThreadData::ThreadData(Allocator& allocator) noexcept : impl_(std::make_unique<Impl>(allocator.impl())) {}
+alloc::Allocator::ThreadData::ThreadData(Allocator& allocator) noexcept : impl_(std::make_unique<Impl>(allocator.impl())) {
+    // 注册BaseObjectOperatorInterfaces*.
+    common::KNBaseObjectOperator *knOperator = new common::KNBaseObjectOperator();
+    common::BaseObject::RegisterDynamic(knOperator);
+}
 
 alloc::Allocator::ThreadData::~ThreadData() = default;
 

@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 #include "common_components/heap/ark_collector/ark_collector.h"
+#include <cstdint>
+#include <cstdio>
 
 #include "common_components/common_runtime/hooks.h"
 #include "common_components/log/log.h"
@@ -548,6 +550,7 @@ void ArkCollector::PostMarking()
 
     // clear satb buffer when gc finish tracing.
     SatbBuffer::Instance().ClearBuffer();
+    
 
     WVerify::VerifyAfterMark(*this);
 }
@@ -631,12 +634,12 @@ void ArkCollector::PreforwardFlip()
         }
     };
     FlipFunction forwardMutatorRoot = [this](Mutator &mutator) {
-        WeakRefFieldVisitor weakVisitor = GetWeakRefFieldVisitor();
-        VisitWeakMutatorRoot(weakVisitor, mutator);
-        RefFieldVisitor visitor = GetPrefowardRefFieldVisitor();
-        VisitMutatorPreforwardRoot(visitor, mutator);
-        // Request finalize callback in each vm-thread when gc finished.
-        mutator.SetFinalizeRequest();
+        // WeakRefFieldVisitor weakVisitor = GetWeakRefFieldVisitor();
+        // VisitWeakMutatorRoot(weakVisitor, mutator);
+        // RefFieldVisitor visitor = GetPrefowardRefFieldVisitor();
+        // VisitMutatorPreforwardRoot(visitor, mutator);
+        // // Request finalize callback in each vm-thread when gc finished.
+        // mutator.SetFinalizeRequest();
     };
     STWParam stwParam{"final-mark"};
     MutatorManager::Instance().FlipMutators(stwParam, remarkAndForwardGlobalRoot, &forwardMutatorRoot);
@@ -760,6 +763,7 @@ void ArkCollector::FixHeap()
     WVerify::VerifyAfterFix(*this);
 }
 
+uint64_t start = 0;
 void ArkCollector::DoGarbageCollection()
 {
     const bool isNotYoungGC = gcReason_ != GCReason::GC_REASON_YOUNG;
@@ -770,19 +774,14 @@ void ArkCollector::DoGarbageCollection()
 #endif
         STWParam stwParam{"stw-gc"};
     {
+
+        start = TimeUtil::NanoSeconds();
         ScopedStopTheWorld stw(stwParam);
-
-        reinterpret_cast<RegionSpace&>(Heap::GetHeap().GetAllocator()).DumpAllRegionSummary("Start GC");
-
         auto collectedRoots = EnumRoots<EnumRootsPolicy::NO_STW_AND_NO_FLIP_MUTATOR>();
         MarkingHeap(collectedRoots);
-
         TransitionToGCPhase(GCPhase::GC_PHASE_FINAL_MARK, true);
-
         Remark();
-
         PostMarking();
-
         Preforward();
         ConcurrentPreforward();
         // reclaim large objects should after preforward(may process weak ref) and
@@ -796,14 +795,13 @@ void ArkCollector::DoGarbageCollection()
         WVerify::VerifyAfterForward(*this);
 
         PrepareFix();
-
         FixHeap();
         if (isNotYoungGC) {
             CollectPinnedGarbage();
         }
 
-        TransitionToGCPhase(GCPhase::GC_PHASE_IDLE, true);
 
+        TransitionToGCPhase(GCPhase::GC_PHASE_IDLE, true);
         ClearAllGCInfo();
         CollectSmallSpace();
 
@@ -841,7 +839,6 @@ void ArkCollector::DoGarbageCollection()
         if (isNotYoungGC) {
             CollectPinnedGarbage();
         }
-        reinterpret_cast<RegionSpace&>(Heap::GetHeap().GetAllocator()).DumpAllRegionSummary("After GC");
         TransitionToGCPhase(GCPhase::GC_PHASE_IDLE, true);
         ClearAllGCInfo();
         CollectSmallSpace();
@@ -871,8 +868,8 @@ void ArkCollector::DoGarbageCollection()
     TransitionToGCPhase(GCPhase::GC_PHASE_IDLE, true);
     ClearAllGCInfo();
     RegionSpace &space = reinterpret_cast<RegionSpace &>(theAllocator_);
-    space.DumpAllRegionSummary("Peak GC log");
-    space.DumpAllRegionStats("region statistics when gc ends");
+    // space.DumpAllRegionSummary("Peak GC log");
+    // space.DumpAllRegionStats("region statistics when gc ends");
     CollectSmallSpace();
 }
 
@@ -888,11 +885,11 @@ CArrayList<CArrayList<BaseObject *>> ArkCollector::EnumRootsFlip(STWParam& param
     std::mutex stackMutex;
     CArrayList<CArrayList<BaseObject *>> rootSet;  // allcate for each mutator
     FlipFunction enumMutatorRoot = [&rootSet, &stackMutex](Mutator &mutator) {
-        CArrayList<BaseObject *> roots;
-        RefFieldVisitor localVisitor = [&roots](RefField<> &root) { roots.emplace_back(root.GetTargetObject()); };
-        VisitMutatorRoot(localVisitor, mutator);
-        std::lock_guard<std::mutex> lockGuard(stackMutex);
-        rootSet.emplace_back(std::move(roots));
+        // CArrayList<BaseObject *> roots;
+        // RefFieldVisitor localVisitor = [&roots](RefField<> &root) { roots.emplace_back(root.GetTargetObject()); };
+        // VisitMutatorRoot(localVisitor, mutator);
+        // std::lock_guard<std::mutex> lockGuard(stackMutex);
+        // rootSet.emplace_back(std::move(roots));
     };
     MutatorManager::Instance().FlipMutators(param, enumGlobalRoots, &enumMutatorRoot);
     return rootSet;

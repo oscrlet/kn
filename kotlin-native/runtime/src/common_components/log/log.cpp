@@ -260,22 +260,18 @@ std::string PrettyOrderMathNano(uint64_t number, const char* unit)
 
 constexpr size_t LOG_BUFFER_SIZE = 1024;
 
-std::string FormatLogMessage(const char* format, va_list agrs) noexcept
-{
-    char buf[LOG_BUFFER_SIZE];
-    int ret = vsprintf_s(buf, sizeof(buf), format, agrs);
-    if (ret < 0) {
-        return std::string("Log format error: ") + strerror(errno);
-    }
-    return std::string(buf, ret);
-}
-
-std::string FormatLog(const char* format, ...) noexcept
-{
+__attribute__((format(printf, 1, 2)))
+std::string FormatLog(const char* format, ...) noexcept {
     va_list args;
     va_start(args, format);
-    auto msg = FormatLogMessage(format, args);
+    char buf[LOG_BUFFER_SIZE];
+    int ret = std::vsnprintf(buf, sizeof(buf), format, args);
+    if (ret < 0) {
+        return std::string("Log format error: ") + std::strerror(errno);
+    }
+    size_t count = static_cast<size_t>(ret);
+    if (count >= sizeof(buf)) count = sizeof(buf) - 1;
     va_end(args);
-    return "[CMC GC] " + msg;
+    return "[CMC GC] " + std::string(buf, count);
 }
 }  // namespace common

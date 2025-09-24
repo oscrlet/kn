@@ -3,6 +3,8 @@
  * that can be found in the LICENSE file.
  */
 
+#include "base/common.h"
+#include "common_components/log/log_base.h"
 #include "std_support/Atomic.hpp"
 #include "Cleaner.h"
 #include "CompilerConstants.hpp"
@@ -16,20 +18,19 @@
 #include "RuntimePrivate.hpp"
 #include "Worker.h"
 #include "KString.h"
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 #include <thread>
 
-#ifdef CMC
 #include "common_interfaces/base_runtime.h"
 #include "common_interfaces/thread/thread_holder.h"
 #include "common_interfaces/heap/heap_allocator.h"
 #include "common_components/heap/heap.h"
 #include "common_components/heap/allocator/region_desc.h"
 #include "common_components/common_runtime/base_runtime_param.h"
-#include "alloc/crt/cpp/hooks.h"
-#endif 
 
 using namespace kotlin;
 
@@ -93,6 +94,27 @@ enum GlobalRuntimeStatus {
 
 std::atomic<GlobalRuntimeStatus> globalRuntimeStatus = kGlobalRuntimeUninitialized;
 
+std::map<std::string, Level> logLevels = {
+    {"debug", Level::DEBUG},
+    {"info", Level::INFO},
+    {"fatal", Level::FATAL},
+    {"fatal_without_abort", Level::FATAL_WITHOUT_ABORT},
+    {"verbose", Level::VERBOSE},
+    {"warn", Level::WARN},
+    {"error", Level::ERROR},
+};
+
+inline static void InitLog() {
+  const char* env = std::getenv("CRT_LOG_LEVEL");
+  std::string logLevelStr = env != nullptr ? std::string(env) : "error";
+  std::transform(logLevelStr.begin(), logLevelStr.end(), logLevelStr.begin(), ::tolower);
+  common::LogOptions options = {
+    .level = logLevels[std::string(env != nullptr ? env : "error")],
+    .component = static_cast<ComponentMark>(Component::ALL),
+  };
+  common::Log::Initialize(options);
+}
+
 void Kotlin_deinitRuntimeCallback(void* argument);
 
 NO_INLINE RuntimeState* initRuntime() {
@@ -101,21 +123,17 @@ NO_INLINE RuntimeState* initRuntime() {
 //#ifdef CRT_ALLOCATOR
   common::RuntimeParam param = common::BaseRuntimeParam::DefaultRuntimeParam();
  // param.gcParam.enableGC = false;
-  param.gcParam.enableStwGC = true;
+  param.gcParam.enableStwGC = false;
   // 调整crt的gc阈值
   // param.gcParam.gcInterval = 100000;
   // param.gcParam.garbageThreshold = 0.1;
   // param.gcParam.gcThreads = 1;
   // param.gcParam.gcThreshold = 1;
-  printf("Run in initRuntime\n");
   common::BaseRuntime::GetInstance()->Init(param);
+  InitLog();
   auto *holder_ = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
   auto *scope_ = new common::ThreadHolder::TryBindMutatorScope(holder_);
   (void)scope_;
-
-  // 注册BaseObjectOperatorInterfaces*.
-  common::KNBaseObjectOperator *knOperator = new common::KNBaseObjectOperator();
-  common::BaseObject::RegisterDynamic(knOperator);
 //#endif
 
   SetKonanTerminateHandler();

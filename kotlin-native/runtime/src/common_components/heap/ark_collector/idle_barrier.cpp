@@ -113,7 +113,7 @@ void IdleBarrier::WriteRefField(BaseObject* obj, RefField<false>& field, BaseObj
     if (Heap::IsTaggedObject((HeapAddress)ref)) {
         UpdateRememberSet(obj, ref);
     }
-    field.SetTargetObject(ref);
+    // field.SetTargetObject(ref);
 }
 
 void IdleBarrier::WriteBarrier(BaseObject* obj, RefField<false>& field, BaseObject* ref) const

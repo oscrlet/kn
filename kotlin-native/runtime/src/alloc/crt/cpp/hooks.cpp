@@ -16,6 +16,7 @@
 #include "hooks.h"
 
 #include "common_components/common_runtime/hooks.h"
+#include "common_components/heap/collector/collector.h"
 #include "common_interfaces/objects/base_object.h"
 #include "common_components/heap/heap.h"
 
@@ -34,6 +35,7 @@
 #include "ThreadData.hpp"
 #include "Types.h"
 
+#include <cstdint>
 #include <stdio.h>
 #include <sstream>
 
@@ -42,14 +44,14 @@
 namespace kotlin {
 bool is_valid_pointer(const void* addr) {
     if (addr == NULL) return false;
-    
+
     mach_port_t task = mach_task_self();
     vm_size_t size = 1;  // 尝试读取1字节
     vm_address_t data;
     mach_msg_type_number_t dataCnt;
 
     kern_return_t ret = vm_read(task, (vm_address_t)addr, size, &data, &dataCnt);
-    
+
     if (ret == KERN_SUCCESS) {
         vm_deallocate(task, data, size);  // 释放临时内存
         return true;
@@ -57,29 +59,16 @@ bool is_valid_pointer(const void* addr) {
     return false;
 }
 
-bool IsValidObject(const ObjHeader* obj) {
-    auto &collector = common::Heap::GetHeap().GetCollector();
-    if (!collector.IsInAllocateAddr(reinterpret_cast<const common::BaseObject*>(obj))) {
-        return false;
-    }
-    // TODO: 下面这个判断可以尝试删除
-    if (!common::Heap::IsHeapAddress(obj)) {
-        return false;
-    }
-    return true;
-}
-
 bool collectRoot(const common::RefFieldVisitor &visitorFunc, ObjHeader* &object) noexcept {
-    if (!IsValidObject(object))
+    auto refField = reinterpret_cast<common::RefField<>&>(object);
+    if (!common::Heap::IsHeapAddress(object) || !refField.GetTargetObject()->IsValidObject()) {
         return false;
-    if (object->heap()) {
-        visitorFunc(reinterpret_cast<common::RefField<>&>(object));
-    } else {
-        // Each permanent and stack object has own entry in the root set, so it's okay to only process objects in heap.
-        // Traits::processInMark(markQueue, object);
-        // RuntimeAssert(!object->has_meta_object(), "Non-heap object %p may not have an extra object data", object);
-        // TODO: 这里的逻辑需要补充。
-    }
+    } 
+    visitorFunc(reinterpret_cast<common::RefField<>&>(object));
+    // Each permanent and stack object has own entry in the root set, so it's okay to only process objects in heap.
+    // Traits::processInMark(markQueue, object);
+    // RuntimeAssert(!object->has_meta_object(), "Non-heap object %p may not have an extra object data", object);
+    // TODO: 这里的逻辑需要补充。
     return true;
 }
 
@@ -129,7 +118,7 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
     auto rootSet = kotlin::mm::ThreadRootSet(thread);
         // printf frames.
     // printf("Print Frames before collectRoots:\n");
-    int frameSize = 100;
+    uintptr_t frameSize = 50;
     FrameOverlay *currentFrame = rootSet.stack_.currentFrame_;
     //PrintFrame(thread, frameSize);
     // uintptr_t fpStart = 0;
@@ -169,28 +158,27 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
     //     addStackRange(fpStart, fpEnd, visitorFunc);
     // }
 
-    // 加 50 
+    // 加 50
     // printf("Print Frames during colllectRoots:\n");
     currentFrame = rootSet.stack_.currentFrame_;
-    while(currentFrame != nullptr) {
-     //   printf("*******************\n");
-        for(int i = 0; i < frameSize; i++) {
-            // printf("%p ", *(reinterpret_cast<ObjHeader**>(currentFrame) + i));
-            ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(currentFrame) + i);
-       //     printf("%p ", *tmpObj);
-            collectRoot(visitorFunc, *tmpObj);
+    assert(currentFrame);
+    uintptr_t minFrame =  UINTPTR_MAX;
+    uintptr_t maxFrame = 0;
+    while (currentFrame != nullptr) {
+        if ((uintptr_t)currentFrame < minFrame) {
+            minFrame = (uintptr_t)currentFrame;
         }
-        for(int i = 0; i < frameSize; i++) {
-            // printf("%p ", *(reinterpret_cast<ObjHeader**>(currentFrame) + i));
-            ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(currentFrame) - i);
-         //   printf("%p ", *tmpObj);
-            collectRoot(visitorFunc, *tmpObj);
+        if ((uintptr_t)currentFrame > maxFrame) {
+            maxFrame = (uintptr_t)currentFrame;
         }
-        // printf("\n");
         currentFrame = currentFrame->previous;
     }
-    //printf("Print Frames after collectRoots:\n");
-    //PrintFrame(thread, frameSize);
+    minFrame -= (frameSize * sizeof(uintptr_t));
+    maxFrame += (frameSize * sizeof(uintptr_t));
+    for (auto i = (uintptr_t)minFrame; i <= (uintptr_t)maxFrame; i += sizeof(uintptr_t)) {
+        ObjHeader** tmpObj = (reinterpret_cast<ObjHeader**>(i));
+        collectRoot(visitorFunc, *tmpObj);
+    }
 }
 
 // void collectRootSetGlobals(const common::RefFieldVisitor &visitorFunc) {
@@ -258,41 +246,43 @@ size_t KNBaseObjectOperator::GetSize(const BaseObject *object) const {
    }
 }
 
-void KNBaseObjectOperator::ForEachRefField(const BaseObject *crtObject, const RefFieldVisitor &visitor) const {
-    ObjHeader *object = const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(crtObject));
-    auto process = object->type_info()->processObjectInMark;
-    process(static_cast<void*>(const_cast<RefFieldVisitor*>(&visitor)), object);
-}
-
 void processFieldInMark(const RefFieldVisitor &visitor, ObjHeader* object, ObjHeader* &field) noexcept {
     if (common::Heap::IsHeapAddress(field)) {
-        if (reinterpret_cast<BaseObject*>(field)->GetSize() != 0) {
-            bool flag = true;
-            (void)flag;
-        }
         visitor(reinterpret_cast<common::RefField<>&>(field));
     }
 }
 
-void processArrayInMark(void* state, void* objHeader) {
-    const RefFieldVisitor *visitorPtr = reinterpret_cast<const RefFieldVisitor*>(state);
-    ArrayHeader *arrayHeader = reinterpret_cast<ArrayHeader*>(objHeader);
-    kotlin::traverseArrayOfObjectsElements(arrayHeader, [=] (auto elemAccessor) noexcept {
-       if (ObjHeader** elem = elemAccessor.direct().location()) {
-            if (*elem) {
-                processFieldInMark(*visitorPtr, arrayHeader->obj(), *elem);
-            }
-        }
-    });
+void processArrayInMark(const RefFieldVisitor &visitor, ObjHeader *object) {
+    std::abort();
+    // auto *objHeader = reinterpret_cast<ObjHeader*>(object);
+    // // NB: note that we should not use traverseArrayOfObjectsElements because we should avoid 
+    // // traversing primitive fields in the array
+    // kotlin::traverseObjectFields(objHeader, [=] (auto elemAccessor) noexcept {
+    //    if (ObjHeader** elem = elemAccessor.direct().location()) {
+    //         if (*elem) {
+    //             processFieldInMark(visitor, objHeader, *elem);
+    //         }
+    //     }
+    // });
 }
 
-void processObjectInMark(void* state, void* objHeader) {
-    const RefFieldVisitor *visitorPtr = reinterpret_cast<const RefFieldVisitor*>(state);
-    ObjHeader *object = reinterpret_cast<ObjHeader*>(objHeader);
-    kotlin::traverseClassObjectFields(object, [=] (auto fieldAccessor) noexcept {
-        if (ObjHeader** field = fieldAccessor.direct().location()) {
-            if (*field) {
-                processFieldInMark(*visitorPtr, object, *field);
+void processObjectInMark(const RefFieldVisitor &visitor, ObjHeader *object) {
+    std::abort();
+    // kotlin::traverseClassObjectFields(object, [=] (auto fieldAccessor) noexcept {
+    //     if (ObjHeader** field = fieldAccessor.direct().location()) {
+    //         if (*field) {
+    //             processFieldInMark(visitor, object, *field);
+    //         }
+    //     }
+    // });
+}
+
+void KNBaseObjectOperator::ForEachRefField(const BaseObject *crtObject, const RefFieldVisitor &visitor) const {
+    auto* objHeader = const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(crtObject));
+    kotlin::traverseObjectFields(objHeader, [=](auto elemAccessor) noexcept {
+        if (ObjHeader** elem = elemAccessor.direct().location()) {
+            if (*elem) {
+                processFieldInMark(visitor, objHeader, *elem);
             }
         }
     });

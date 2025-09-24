@@ -1,3 +1,5 @@
+#pragma once
+
 #include "common_components/common_runtime/hooks.h"
 #include "common_interfaces/objects/base_object.h"
 #include "common_interfaces/objects/base_state_word.h"
@@ -7,10 +9,11 @@ namespace common {
 void processArrayInMark(void* state, void* objHeader);
 void processObjectInMark(void* state, void* objHeader);
 
-class KNStateWorld {
+class KNStateWord {
 public:
     struct GCStateWord {
-        common::StateWordType address_ : 60;
+        common::StateWordType address_ : 59;
+        common::StateWordType valid_ : 1;
         common::StateWordType remainded_ : 4;
     };
 
@@ -22,6 +25,13 @@ public:
         return state_.address_;
     }
 
+    bool IsValid() const {
+        return state_.valid_ == 1;
+    }
+
+    void SetValid(bool valid) {
+        state_.valid_ = valid;
+    }
 private:
     union {
         GCStateWord state_;
@@ -31,13 +41,17 @@ private:
 
 class KNBaseObject: public BaseObject {
 public:
-
     void SetForwardingPointerAfterExclusive(BaseObject *fwdPtr) {
-        reinterpret_cast<KNStateWorld*>(this)->SetForwardingPointerAfterExclusive(reinterpret_cast<uintptr_t>(fwdPtr));
+        reinterpret_cast<KNStateWord*>(this)->SetForwardingPointerAfterExclusive(reinterpret_cast<uintptr_t>(fwdPtr));
     }
-
     BaseObject* GetForwardingPointerAfterExclusive() const {
-        return reinterpret_cast<BaseObject*>(reinterpret_cast<const KNStateWorld*>(this)->GetForwardingPointerAfterExclusive());
+        return reinterpret_cast<BaseObject*>(reinterpret_cast<const KNStateWord*>(this)->GetForwardingPointerAfterExclusive());
+    }
+    bool IsValid() const {
+        return reinterpret_cast<const KNStateWord*>(this)->IsValid();
+    }
+    void SetValid(bool valid) {
+        reinterpret_cast<KNStateWord*>(this)->SetValid(valid);
     }
 };
 
@@ -47,8 +61,7 @@ public:
     size_t GetSize(const BaseObject *object) const override;
     // Check is valid object.
     bool IsValidObject(const BaseObject *object) const override {
-        // TODO
-        return true;
+        return reinterpret_cast<const KNBaseObject*>(object)->IsValid();
     }
 
     // Iterate object field.
@@ -63,7 +76,6 @@ public:
     void SetForwardingPointerAfterExclusive(BaseObject *object, BaseObject *fwdPtr) override {
         reinterpret_cast<KNBaseObject*>(object)->SetForwardingPointerAfterExclusive(fwdPtr);
     }
-
     virtual ~KNBaseObjectOperator() = default;
 };
 

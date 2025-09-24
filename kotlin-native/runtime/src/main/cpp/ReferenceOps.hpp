@@ -5,8 +5,12 @@
 
 #pragma once
 
+#include <cstdlib>
 #include "Memory.h"
+#include "macros.h"
 #include "std_support/Atomic.hpp"
+#include "alloc/crt/cpp/hooks.h"
+#include "common_interfaces/base_runtime.h"
 
 #if __has_feature(thread_sanitizer)
 #include <sanitizer/tsan_interface.h>
@@ -39,11 +43,12 @@ public:
     DirectRefAccessor() = delete;
     DirectRefAccessor& operator=(const DirectRefAccessor&) = delete;
 
-    explicit DirectRefAccessor(ObjHeader*& fieldRef) noexcept : ref_(fieldRef) {}
-    explicit DirectRefAccessor(ObjHeader** fieldPtr) noexcept : DirectRefAccessor(*fieldPtr) {}
-    DirectRefAccessor(const DirectRefAccessor& other) = default;
+    // explicit DirectRefAccessor(ObjHeader*& fieldRef) noexcept : ref_(fieldRef) {}
+    explicit DirectRefAccessor(ObjHeader** fieldPtr) noexcept : refPtr_(fieldPtr) {}
+    explicit DirectRefAccessor(ObjHeader** fieldPtr, ObjHeader *thisPtr) noexcept : refPtr_(fieldPtr), this_(thisPtr) {}
+    DirectRefAccessor(const DirectRefAccessor& other) noexcept : DirectRefAccessor(other.refPtr_) {}
 
-    ObjHeader** location() const noexcept { return &ref_; }
+    ObjHeader** location() const noexcept { return refPtr_; }
 
     PERFORMANCE_INLINE operator ObjHeader*() const noexcept { return load(); }
     PERFORMANCE_INLINE ObjHeader* operator=(ObjHeader* desired) noexcept { store(desired); return desired; }
@@ -59,40 +64,51 @@ public:
 #endif
         return loaded;
 #else
-        return ref_;
+        return reinterpret_cast<ObjHeader*>(common::BaseRuntime::ReadBarrier(this_, refPtr_));
 #endif
     }
 
-    PERFORMANCE_INLINE void store(ObjHeader* desired) noexcept {
+    ALWAYS_INLINE void store(ObjHeader* desired) noexcept {
+        if (this_) {
+            common::BaseRuntime::WriteBarrier(this_, refPtr_, desired);
+        }
 #if STRICT_ATOMICS_IN_HEAP
         storeAtomic(desired, std::memory_order_relaxed);
 #else
-        ref_ = desired;
+        *refPtr_ = desired;
 #endif
     }
 
-    PERFORMANCE_INLINE auto atomic() noexcept {
-        return std_support::atomic_ref{ref_};
+    ALWAYS_INLINE auto atomic() noexcept {
+        return std_support::atomic_ref{*refPtr_};
     }
-    PERFORMANCE_INLINE auto atomic() const noexcept {
-        return std_support::atomic_ref{ref_};
+    ALWAYS_INLINE auto atomic() const noexcept {
+        return std_support::atomic_ref{*refPtr_};
     }
 
     PERFORMANCE_INLINE ObjHeader* loadAtomic(std::memory_order order) const noexcept {
         return atomic().load(order);
     }
-    PERFORMANCE_INLINE void storeAtomic(ObjHeader* desired, std::memory_order order) noexcept {
+    ALWAYS_INLINE void storeAtomic(ObjHeader* desired, std::memory_order order) noexcept {
+        if (this_) {
+            common::BaseRuntime::WriteBarrier(this_, refPtr_, desired);
+        }
         atomic().store(desired, order);
     }
-    PERFORMANCE_INLINE ObjHeader* exchange(ObjHeader* desired, std::memory_order order) noexcept {
+    ALWAYS_INLINE ObjHeader* exchange(ObjHeader* desired, std::memory_order order) noexcept {
+        std::cerr << "exchange barriers not supported\n";
+        std::abort();
         return atomic().exchange(desired, order);
     }
-    PERFORMANCE_INLINE bool compareAndExchange(ObjHeader*& expected, ObjHeader* desired, std::memory_order order) noexcept {
+    ALWAYS_INLINE bool compareAndExchange(ObjHeader*& expected, ObjHeader* desired, std::memory_order order) noexcept {
+        std::cerr << "exchange barriers not supported\n";
+        std::abort();
         return atomic().compare_exchange_strong(expected, desired, order);
     }
 
 private:
-    ObjHeader*& ref_;
+    ObjHeader** refPtr_;
+    ObjHeader* this_ = nullptr;
 };
 
 /**
@@ -106,8 +122,9 @@ public:
     RefAccessor() = delete;
     RefAccessor& operator=(const RefAccessor&) = delete;
 
-    explicit RefAccessor(ObjHeader*& fieldRef) noexcept : direct_(fieldRef) {}
-    explicit RefAccessor(ObjHeader** fieldPtr) noexcept : RefAccessor(*fieldPtr) {}
+    explicit RefAccessor(ObjHeader*& fieldRef) noexcept : direct_(&fieldRef) {}
+    explicit RefAccessor(ObjHeader** fieldPtr) noexcept : direct_(fieldPtr) {}
+    RefAccessor(ObjHeader** fieldPtr, ObjHeader* thisPtr) noexcept : direct_(fieldPtr, thisPtr) {}
     RefAccessor(const RefAccessor& other) noexcept : direct_(other.direct_) {}
 
     DirectRefAccessor direct() const noexcept { return direct_; }

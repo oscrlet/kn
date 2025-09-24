@@ -74,8 +74,8 @@ void PostMarkingBarrier::WriteBarrier(BaseObject* obj, RefField<false>& field, B
 
 void PostMarkingBarrier::WriteStaticRef(RefField<false>& field, BaseObject* ref) const
 {
-    RefField<> newField(ref);
-    field.SetFieldValue(newField.GetFieldValue());
+    // RefField<> newField(ref);
+    // field.SetFieldValue(newField.GetFieldValue());
 }
 
 void PostMarkingBarrier::WriteStruct(BaseObject* obj, HeapAddress dst, size_t dstLen,

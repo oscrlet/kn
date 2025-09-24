@@ -22,12 +22,21 @@
 #include "utils/debug.h"
 
 // Inline (disabled for DEBUG)
-#ifndef NDEBUG
-#if !defined(NDEBUG) && !defined(ALWAYS_INLINE)
-#define ALWAYS_INLINE // NOLINT(cppcoreguidelines-macro-usage)
-#else  // NDEBUG
+
+#if !defined(ALWAYS_INLINE)
+#ifdef NDEBUG
 #define ALWAYS_INLINE __attribute__((always_inline)) // NOLINT(cppcoreguidelines-macro-usage)
-#endif  // !NDEBUG
+#else // !defined(ALWAYS_INLINE)
+#define ALWAYS_INLINE // NOLINT(cppcoreguidelines-macro-usage)
+#endif
+#endif
+
+#if !defined(ALWAYS_INLINE)
+#ifdef NDEBUG
+#define ALWAYS_INLINE __attribute__((always_inline)) // NOLINT(cppcoreguidelines-macro-usage)
+#else // !defined(ALWAYS_INLINE)
+#define ALWAYS_INLINE // NOLINT(cppcoreguidelines-macro-usage)
+#endif
 #endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
