@@ -129,8 +129,10 @@ public:
     static void WriteRoot(void* obj);
     static void WriteBarrier(void* obj, void* field, void* ref);
     static void WriteStaticRef(void* field, void* ref);
+    static void* CompareAndSwapRefField(void* obj, void* field, void* expected, void* desired, std::memory_order succOrder, std::memory_order failOrder);
     static void* ReadBarrier(void* obj, void* field);
     static void* ReadBarrier(void* field);
+    static void* AtomicSwapBarrier(void* obj, void* field, void* ref, std::memory_order order);
     static void* AtomicReadBarrier(void* obj, void* field, std::memory_order order);
     static void RequestGC(GCReason reason, bool async, GCType gcType);
     static void WaitForGCFinish();

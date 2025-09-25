@@ -27,7 +27,7 @@ namespace common {
 thread_local ThreadHolder *currentThreadHolder = nullptr;
 
 ThreadHolder *ThreadHolder::CreateAndRegisterNewThreadHolder(void *vm)
-{  // 这个vm有什么用？
+{
     if (ThreadLocal::IsArkProcessor()) {
         LOG_COMMON(FATAL) << "CreateAndRegisterNewThreadHolder fail";
         return nullptr;

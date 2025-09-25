@@ -117,24 +117,7 @@ inline static void InitLog() {
 
 void Kotlin_deinitRuntimeCallback(void* argument);
 
-NO_INLINE RuntimeState* initRuntime() {
-  // 在这里尝试初始化Common Runtime
-  // common::RuntimeParam param;
-//#ifdef CRT_ALLOCATOR
-  common::RuntimeParam param = common::BaseRuntimeParam::DefaultRuntimeParam();
- // param.gcParam.enableGC = false;
-  param.gcParam.enableStwGC = false;
-  // 调整crt的gc阈值
-  // param.gcParam.gcInterval = 100000;
-  // param.gcParam.garbageThreshold = 0.1;
-  // param.gcParam.gcThreads = 1;
-  // param.gcParam.gcThreshold = 1;
-  common::BaseRuntime::GetInstance()->Init(param);
-  InitLog();
-  auto *holder_ = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
-  auto *scope_ = new common::ThreadHolder::TryBindMutatorScope(holder_);
-  (void)scope_;
-//#endif
+RuntimeState* initRuntime() {
 
   SetKonanTerminateHandler();
   initObjectPool();
@@ -148,6 +131,20 @@ NO_INLINE RuntimeState* initRuntime() {
   ++aliveRuntimesCount;
 
   bool firstRuntime = initializeGlobalRuntimeIfNeeded();
+#ifdef USE_CRT
+  if (firstRuntime) {
+      common::RuntimeParam param = common::BaseRuntimeParam::DefaultRuntimeParam();
+     // param.gcParam.enableGC = false;
+      param.gcParam.enableStwGC = false;
+      param.heapParam.heapSize = 4ULL * common::GB;
+      // param.gcParam.gcInterval = 100000;
+      // param.gcParam.garbageThreshold = 0.1;
+      // param.gcParam.gcThreads = 1;
+      // param.gcParam.gcThreshold = 1;
+      common::BaseRuntime::GetInstance()->Init(param);
+      InitLog();
+  }
+#endif
   result->memoryState = InitMemory();
   // Switch thread state because worker and globals inits require the runnable state.
   // This call may block if GC requested suspending threads.

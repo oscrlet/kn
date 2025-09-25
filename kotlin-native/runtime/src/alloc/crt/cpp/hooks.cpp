@@ -195,7 +195,6 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
 // 重写KN中的CollectRootSet逻辑.
 void collectRootSet(const common::RefFieldVisitor &visitorFunc) {
     for (auto& thread : mm::GlobalData::Instance().threadRegistry().LockForIter()) {
-        // 这里的thread.Publish()还不知道是干什么的，先保留原有的逻辑.
         thread.Publish();
         collectRootSetForThread(visitorFunc, thread);
     }

@@ -96,14 +96,26 @@ public:
         atomic().store(desired, order);
     }
     ALWAYS_INLINE ObjHeader* exchange(ObjHeader* desired, std::memory_order order) noexcept {
-        std::cerr << "exchange barriers not supported\n";
-        std::abort();
+#ifdef USE_CRT
+        //TODO: Make sure swapBarrier is implemented correctly in CRT
+        if (this_) {
+            return reinterpret_cast<ObjHeader*>(common::BaseRuntime::AtomicSwapBarrier(this_, refPtr_, desired, order));
+        } 
         return atomic().exchange(desired, order);
+#else
+        return atomic().exchange(desired, order);
+#endif
     }
     ALWAYS_INLINE bool compareAndExchange(ObjHeader*& expected, ObjHeader* desired, std::memory_order order) noexcept {
-        std::cerr << "exchange barriers not supported\n";
-        std::abort();
+#ifdef USE_CRT
+        //TODO: Make sure CAS is implemented correctly in CRT
+        if (this_) {
+            return reinterpret_cast<ObjHeader*>(common::BaseRuntime::CompareAndSwapRefField(this_, refPtr_, reinterpret_cast<void*>(expected), desired, order, order));
+        }
         return atomic().compare_exchange_strong(expected, desired, order);
+#else
+        return atomic().compare_exchange_strong(expected, desired, order);
+#endif
     }
 
 private:
