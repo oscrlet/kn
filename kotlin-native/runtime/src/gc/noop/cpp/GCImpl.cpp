@@ -10,6 +10,7 @@
 #include "GCStatistics.hpp"
 #include "KAssert.h"
 #include "Logging.hpp"
+#include "mutator/mutator.h"
 
 using namespace kotlin;
 
@@ -21,7 +22,12 @@ void gc::GC::ThreadData::OnSuspendForGC() noexcept { }
 
 void gc::GC::ThreadData::safePoint() noexcept {}
 
-void gc::GC::ThreadData::onThreadRegistration() noexcept {}
+void gc::GC::ThreadData::onThreadRegistration() noexcept {
+  auto tlsPtr = common::GetThreadLocalData();
+#ifdef __aarch64__
+  __asm__ volatile ("mov x28, %0" : : "r"(tlsPtr));
+#endif
+}
 
 ALWAYS_INLINE void gc::GC::ThreadData::onAllocation(ObjHeader* object) noexcept {}
 
