@@ -14,6 +14,7 @@
  */
 
 #include "common_components/log/log.h"
+#include <cstring>
 
 // #include "generated/base_options.h"
 // #include "libpandabase/utils/logger.h"

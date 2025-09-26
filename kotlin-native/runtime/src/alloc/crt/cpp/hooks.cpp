@@ -39,26 +39,8 @@
 #include <stdio.h>
 #include <sstream>
 
-#include <mach/mach.h>
 
 namespace kotlin {
-bool is_valid_pointer(const void* addr) {
-    if (addr == NULL) return false;
-
-    mach_port_t task = mach_task_self();
-    vm_size_t size = 1;  // 尝试读取1字节
-    vm_address_t data;
-    mach_msg_type_number_t dataCnt;
-
-    kern_return_t ret = vm_read(task, (vm_address_t)addr, size, &data, &dataCnt);
-
-    if (ret == KERN_SUCCESS) {
-        vm_deallocate(task, data, size);  // 释放临时内存
-        return true;
-    }
-    return false;
-}
-
 bool collectRoot(const common::RefFieldVisitor &visitorFunc, ObjHeader* &object) noexcept {
     auto refField = reinterpret_cast<common::RefField<>&>(object);
     if (!common::Heap::IsHeapAddress(object) || !refField.GetTargetObject()->IsValidObject()) {

@@ -73,10 +73,6 @@ bitcode {
                     val isLinux = target.family == Family.LINUX
                     val isMacOS = target.family == Family.OSX
 
-                    if (isWindows) inputFiles.include("platform/windows/**")
-                    if (isLinux) inputFiles.include("platform/unix/linux/**")
-                    if (isMacOS) inputFiles.include("platform/unix/mac/**")
-
                     // Exclude some unused file copied from CRT, remove later
                     inputFiles.exclude("**/tests/",
                                        "./log/tests/",
@@ -131,7 +127,7 @@ bitcode {
             sourceSets{
                 main {
                     inputFiles.from(srcRoot.dir("./"));
-                    inputFiles.include("src/sprintf_s.c", "src/memmove_s.c", "src/memcpy_s.c", "src/vsprintf_s.c")
+                    inputFiles.include("src/sprintf_s.c", "src/memmove_s.c", "src/memcpy_s.c", "src/vsprintf_s.c", "src/memset_s.c")
                     inputFiles.exclude("**/tests/", "src/securecutil.c")
                     headersDirs.setFrom(srcRoot.dir("../"),
                     srcRoot.dir("./"), 
@@ -271,8 +267,6 @@ bitcode {
                 testFixtures {}
             }
 
-            compilerArgs.add("-DCMC")
-            compilerArgs.add("-DNDEBUG")
         }
 
         module("custom_alloc") {
