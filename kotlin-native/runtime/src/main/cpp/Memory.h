@@ -68,7 +68,14 @@ struct ObjHeader {
    * Hardware guaranties on many supported platforms doesn't allow this to happen.
    */
   const TypeInfo* type_info() const {
+#if defined(__x86_64__)
+      // TODO: This is a tmp solution to get rid of the gc tag bit during runtime on x86
+      // Later confirm that mutator should only see a forwarding ptr during the forward operation when getting size
+      auto typeInfoAddr = reinterpret_cast<TypeInfo*>(reinterpret_cast<uintptr_t>(clearPointerBits(typeInfoOrMetaRelaxed(), OBJECT_TAG_MASK)) & 0x0000FFFFFFFFFFFF)->typeInfo_;
+      auto atomicTypeInfoPtr = kotlin::std_support::atomic_ref{typeInfoAddr};
+#else
       auto atomicTypeInfoPtr = kotlin::std_support::atomic_ref{clearPointerBits(typeInfoOrMetaRelaxed(), OBJECT_TAG_MASK)->typeInfo_};
+#endif
       const TypeInfo* typeInfo = atomicTypeInfoPtr.load(std::memory_order_relaxed);
       RuntimeAssert(typeInfo != nullptr, "TypeInfo ptr in object %p in null", this);
       return typeInfo;

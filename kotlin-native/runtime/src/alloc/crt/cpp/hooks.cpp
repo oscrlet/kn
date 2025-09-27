@@ -146,12 +146,9 @@ bool IsMachineCodeObject(uintptr_t objPtr)
 }
 
 size_t KNBaseObjectOperator::GetSize(const BaseObject *object) const {
-   const ObjHeader* objHeader = reinterpret_cast<const ObjHeader*>(object);
-   if (objHeader->type_info() && objHeader->type_info()->IsArray()) {
-       return kotlin::alloc::crtAllocatedHeapSize(const_cast<ObjHeader*>(objHeader));
-   } else {
-       return kotlin::alloc::allocatedHeapSize(const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(object)));
-   }
+    // NOTE: On bytedance the size of a string is a bit different.
+    // But for blue-zone kotlin we can just delegate it to allocatedHeapSize
+    return kotlin::alloc::allocatedHeapSize(const_cast<ObjHeader*>(reinterpret_cast<const ObjHeader*>(object)));
 }
 
 void processFieldInMark(const RefFieldVisitor &visitor, ObjHeader* object, ObjHeader* &field) noexcept {

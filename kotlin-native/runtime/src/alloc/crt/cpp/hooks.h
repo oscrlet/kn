@@ -4,6 +4,7 @@
 #include "common_interfaces/objects/base_object.h"
 #include "common_interfaces/objects/base_state_word.h"
 
+#include "Runtime.h"
 namespace common {
 
 void processArrayInMark(void* state, void* objHeader);
@@ -26,11 +27,18 @@ public:
     }
 
     bool IsValid() const {
+        // TODO: valid bit can be removed after we have a proper stackmap
+#if defined(__x86_64__) 
+        return kotlin::isValidKotlinObject(reinterpret_cast<uintptr_t>(this));
+#else
         return state_.valid_ == 1;
+#endif
     }
 
     void SetValid(bool valid) {
+#if !defined(__x86_64__) 
         state_.valid_ = valid;
+#endif
     }
 private:
     union {
