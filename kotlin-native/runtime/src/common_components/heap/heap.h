@@ -156,6 +156,7 @@ public:
     static bool IsTaggedObject(HeapAddress addr)
     {
         // relies on the definition of ArkTs
+        // TODO: Fix later
         if (IsKotlin()) {
             return true;
         }

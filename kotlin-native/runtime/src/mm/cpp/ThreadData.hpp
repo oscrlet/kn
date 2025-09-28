@@ -19,7 +19,7 @@
 #include "Utils.hpp"
 #include "ThreadSuspension.hpp"
 
-#include "common_interfaces/thread/thread_holder.h"
+#include "common_interfaces/thread/thread_holder-inl.h"
 
 struct ObjHeader;
 
@@ -38,7 +38,12 @@ public:
         allocator_(GlobalData::Instance().allocator()),
         gc_(GlobalData::Instance().gc(), *this),
         suspensionData_(ThreadState::kNative, *this),
-        currentThreadHolder(common::ThreadHolder::GetCurrent()) {}  // TODO: ThreadData是一个Heap对象，需要再看一下。
+        threadHolder(nullptr) {
+            // Kotlin::ThreadData is 1-1 corresponding to CRT ThreadHolder
+            // This also assume ThreadData is created on a new OSThread
+            threadHolder = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
+            threadHolder->BindMutator();
+        }
 
     ~ThreadData() = default;
 
@@ -66,24 +71,13 @@ public:
 
     ThreadSuspensionData& suspensionData() { return suspensionData_; }
 
-    uintptr_t getStackTop() {
-        return stackAddress;
-    }
-
-    uintptr_t getStackBottom() {
-        return stackBottom;
-    }
-
-    void setStackTop(uintptr_t stack_addr) {
-        stackAddress = stack_addr;
-    }
-
-    void setStackBottom(uintptr_t stack_bottom) {
-        stackBottom = stack_bottom;
-    }
-
     void Publish() noexcept {
         // TODO: These use separate locks, which is inefficient.
+        
+        // TODO: This publishes:
+        // 1. all global roots in thread-local to public
+        // 2. All TLS special ref to public
+        // Later we might be able to flip the mutator to do their own work
         globalsThreadQueue_.Publish();
         specialRefRegistry_.publish();
     }
@@ -94,8 +88,8 @@ public:
         allocator_.clearForTests();
     }
 
-    common::ThreadHolder *GetCurrentThreadHolder() {
-        return currentThreadHolder;
+    common::ThreadHolder *GetThreadHolder() {
+        return threadHolder;
     }
 
 private:
@@ -109,10 +103,7 @@ private:
     gc::GC::ThreadData gc_;
     std::vector<std::pair<ObjHeader**, ObjHeader*>> initializingSingletons_;
     ThreadSuspensionData suspensionData_;
-    // 新增一个成员变量，用来指向crt mutator.
-    common::ThreadHolder *currentThreadHolder;
-    uintptr_t stackAddress;
-    uintptr_t stackBottom;
+    common::ThreadHolder *threadHolder;
 };
 
 } // namespace mm

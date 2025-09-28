@@ -63,7 +63,8 @@ bool collectRoot(const common::RefFieldVisitor &visitorFunc, ObjHeader* &object)
     auto refField = reinterpret_cast<common::RefField<>&>(object);
     if (!common::Heap::IsHeapAddress(object) || !refField.GetTargetObject()->IsValidObject()) {
         return false;
-    } 
+    }
+    // printf("The collectRoot is %p\n", object);
     visitorFunc(reinterpret_cast<common::RefField<>&>(object));
     // Each permanent and stack object has own entry in the root set, so it's okay to only process objects in heap.
     // Traits::processInMark(markQueue, object);
@@ -71,34 +72,6 @@ bool collectRoot(const common::RefFieldVisitor &visitorFunc, ObjHeader* &object)
     // TODO: 这里的逻辑需要补充。
     return true;
 }
-
-// void addStackRange(uintptr_t begin, uintptr_t end, const common::RefFieldVisitor &visitorFunc) {
-//     // Ensure begin < end
-//     if (begin > end) {
-//         std::swap(begin, end);
-//     }
-
-//     // Align pointers to word boundary (assuming 8-byte alignment)
-//     uintptr_t aligned_begin = (reinterpret_cast<uintptr_t>(begin) + 7) & ~7;
-//     uintptr_t aligned_end = reinterpret_cast<uintptr_t>(end) & ~7;
-//     uintptr_t shift = sizeof(uintptr_t) * 8 - 1;
-//     uintptr_t mask = (((uintptr_t)1) << shift);
-
-//     // Scan the stack and add potential pointers
-//     for (uintptr_t addr = aligned_begin; addr < aligned_end; addr += 8) {
-//         uintptr_t potential_ptr;
-//         memcpy(&potential_ptr, reinterpret_cast<void*>(addr), sizeof(potential_ptr));
-
-//         // Basic heuristic: consider it a pointer if it's not null and points to a
-//         // reasonable memory range This is a simplified check - a real GC would
-//         // have more sophisticated checks
-//         if (potential_ptr != 0 && potential_ptr > 0x1000 &&
-//             potential_ptr < mask) {
-//             collectRoot(visitorFunc, reinterpret_cast<ObjHeader*>(potential_ptr));
-//             //RuntimeLogInfo({ kotlin::logging::Tag::kGC }, "copyObj  addStackRange stack ptr %p", (void*)potential_ptr);
-//             }
-//     }
-// }
 
 void PrintFrame(kotlin::mm::ThreadData& thread, int frameSize) {
     // auto rootSet2 = kotlin::mm::ThreadRootSet(thread);
@@ -116,50 +89,8 @@ void PrintFrame(kotlin::mm::ThreadData& thread, int frameSize) {
 void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin::mm::ThreadData& thread) {
     // TODO: Remove useless mm::ThreadRootSet abstraction.
     auto rootSet = kotlin::mm::ThreadRootSet(thread);
-        // printf frames.
-    // printf("Print Frames before collectRoots:\n");
     uintptr_t frameSize = 50;
     FrameOverlay *currentFrame = rootSet.stack_.currentFrame_;
-    //PrintFrame(thread, frameSize);
-    // uintptr_t fpStart = 0;
-    // uintptr_t fpEnd = 0;
-    // uintptr_t fp = 0;
-    // for (auto value : mm::ThreadRootSet(thread)) {  // TODO: 需要改parameter的处理逻辑.
-    //     if (collectRoot(visitorFunc, (value.object))) {
-    //         switch (value.source) {
-    //             case mm::ThreadRootSet::Source::kStack:
-    //                 fp = reinterpret_cast<uintptr_t>(value.object);
-    //                 if (fpStart == 0 || fp < fpStart) {
-    //                     fpStart = fp;
-    //                 }
-    //                 if (fpEnd == 0 || fp > fpEnd) {
-    //                     fpEnd = fp;
-    //                 }
-    //                 break;
-    //             case mm::ThreadRootSet::Source::kTLS:
-    //                 break;
-    //         }
-    //     }
-    // }
-
-    // if (fpStart > 0 && fpEnd > 0) {
-    //     fpStart = (fpStart & (-4096));
-    //     if (fpStart > 4096) {
-    //         fpStart -= 4096;
-    //     }
-
-    //     fpEnd += 1024;
-    //     fpEnd = (fpEnd & (-4096));
-    //     fpEnd += 4096;
-    //     //取栈底
-    //     if (thread.getStackBottom() > fpEnd) {
-    //         fpEnd = thread.getStackBottom();
-    //     }
-    //     addStackRange(fpStart, fpEnd, visitorFunc);
-    // }
-
-    // 加 50
-    // printf("Print Frames during colllectRoots:\n");
     currentFrame = rootSet.stack_.currentFrame_;
     assert(currentFrame);
     uintptr_t minFrame =  UINTPTR_MAX;
@@ -181,25 +112,20 @@ void collectRootSetForThread(const common::RefFieldVisitor &visitorFunc, kotlin:
     }
 }
 
-// void collectRootSetGlobals(const common::RefFieldVisitor &visitorFunc) {
-//     // TODO: Remove useless mm::GlobalRootSet abstraction.
-//     auto rootSet = kotlin::mm::GlobalRootSet();
-//     for (auto item = rootSet.begin(); item != rootSet.end(); ++item) {
-//       //  printf("Run in collectRootSetGlobals: object: %p\n", (*item).object);
-//         if (collectRoot2(visitorFunc, (*item).object)) {
-//           //  printf("Run in collectRootSetGlobals: object: %p\n", (*item).object);
-//         }
-//     }
-// }
+void collectRootSetGlobals(const common::RefFieldVisitor &visitorFunc) {
+    // TODO: Remove useless mm::GlobalRootSet abstraction.
+    for (auto value : kotlin::mm::GlobalRootSet()) {
+        collectRoot(visitorFunc, value.object);
+    }
+}
 
 // 重写KN中的CollectRootSet逻辑.
 void collectRootSet(const common::RefFieldVisitor &visitorFunc) {
     for (auto& thread : mm::GlobalData::Instance().threadRegistry().LockForIter()) {
-        // 这里的thread.Publish()还不知道是干什么的，先保留原有的逻辑.
         thread.Publish();
         collectRootSetForThread(visitorFunc, thread);
     }
-    // collectRootSetGlobals(visitorFunc);
+   collectRootSetGlobals(visitorFunc);
 }
 }; // namespace kotlin
 

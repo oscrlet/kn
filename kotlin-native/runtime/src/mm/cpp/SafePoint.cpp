@@ -84,24 +84,15 @@ void safePointActionImpl(mm::ThreadData& threadData) noexcept {
 }
 
 ALWAYS_INLINE void slowPathImpl(mm::ThreadData& threadData) noexcept {
+#ifdef USE_CRT
+    // NOTE: When CRT is enabled this function should not be called.
+    std::abort();
+#endif
     // reread an action to avoid register pollution outside the function
     auto action = safePointAction.load(std::memory_order_seq_cst);
     if (action != nullptr) {
         action(threadData);
     }
-    common::ThreadHolder *threadHolder = threadData.GetCurrentThreadHolder();
- //   common::MutatorBase *mutatorBase = static_cast<common::MutatorBase*>(
- //       static_cast<common::Mutator *>(threadHolder->GetMutator())->GetMutatorBasePtr());
-    
-    if (threadHolder->HasSuspendRequest()) {
-        threadHolder->WaitSuspension();
-    }
-    // if (mutatorBase->GetSafepointActiveState()) {
-    //     // 这里要标记Mutator进入了SafePoint Region.
-    //     // TODO: 要看看是否需要手动触发DoLeaveSafegion.
-    //     mutatorBase->EnterSaferegion(false);
-    //     safePointActionImpl(threadData); // 这里的逻辑还需要优化和整改
-    // }
 }
 
 NO_INLINE void slowPath() noexcept {
@@ -148,51 +139,36 @@ mm::SafePointActivator::~SafePointActivator() {
 
 ALWAYS_INLINE void mm::safePoint(std::memory_order fastPathOrder) noexcept {
     AssertThreadState(ThreadState::kRunnable);
-    auto action = safePointAction.load(fastPathOrder);
-    //printf("Run in mm::safePoint\n");
-
+#ifdef USE_CRT
     auto *threadHolder = common::ThreadHolder::GetCurrent();
     if (threadHolder->HasSuspendRequest()) {
-        //读取栈顶/栈底
-        // void* stack_addr;
-        // size_t stack_size;
-
-        // stack_size = pthread_get_stacksize_np(pthread_self());
-        // stack_addr = pthread_get_stackaddr_np(pthread_self());
-        
-        // auto &threadData = *mm::ThreadRegistry::Instance().CurrentThreadData();
-        // threadData.setStackTop(reinterpret_cast<uintptr_t>(stack_addr));
-        // threadData.setStackBottom(threadData.getStackTop() + stack_size);
-
         threadHolder->WaitSuspension();
     }
+#else
+
+    auto action = safePointAction.load(fastPathOrder);
 
     if (__builtin_expect(action != nullptr, false)) {
         slowPath();
     }
+#endif
 }
 
 ALWAYS_INLINE void mm::safePoint(mm::ThreadData& threadData, std::memory_order fastPathOrder) noexcept {
     AssertThreadState(&threadData, ThreadState::kRunnable);
-    auto action = safePointAction.load(fastPathOrder);
-
-    auto *threadHolder = common::ThreadHolder::GetCurrent();
+#ifdef USE_CRT
+    auto *threadHolder = threadData.GetThreadHolder();
     if (threadHolder->HasSuspendRequest()) {
-        // //读取栈顶/栈底
-        // void* stack_addr;
-        // size_t stack_size;
-
-        // stack_size = pthread_get_stacksize_np(pthread_self());
-        // stack_addr = pthread_get_stackaddr_np(pthread_self());
-
-        // threadData.setStackTop(reinterpret_cast<uintptr_t>(stack_addr));
-        // threadData.setStackBottom(threadData.getStackTop() + stack_size);
         threadHolder->WaitSuspension();
     }
+#else
+    auto action = safePointAction.load(fastPathOrder);
 
     if (__builtin_expect(action != nullptr, false)) {
         slowPath(threadData);
     }
+#endif
+
 }
 
 bool mm::test_support::safePointsAreActive() noexcept {

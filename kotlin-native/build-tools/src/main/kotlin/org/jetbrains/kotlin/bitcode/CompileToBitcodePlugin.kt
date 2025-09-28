@@ -148,17 +148,20 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
     }
 
     // TODO: These should be set by the plugin users.
+    val isReleaseBuild = project.kotlinBuildProperties.getBoolean("kotlin.native.release", false)
     private val DEFAULT_CPP_FLAGS = listOfNotNull(
-            "-gdwarf-2".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.isNativeRuntimeDebugInfoEnabled", false) },
-            "-std=c++17",
-            //"-Werror",
-            "-O2",
-            "-fno-aligned-allocation", // TODO: Remove when all targets support aligned allocation in C++ runtime.
-            "-Wall",
-            "-Wextra",
-            "-Wno-unused-parameter",  // False positives with polymorphic functions.
-            "-DNDEBUG",
-    )
+        "-DUSE_CRT".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
+        "-std=c++17",
+        "-fno-aligned-allocation",
+        "-Wno-unused-parameter",
+        "-Wall",
+        "-Wextra",
+        // "-Werror"
+        ) + if (isReleaseBuild) {
+            listOf("-O2", "-DNDEBUG") 
+        } else {
+            listOf("-O0", "-g", "-gdwarf-2")
+        }
 
     private val allTestsTasks by lazy {
         val name = project.name.capitalized

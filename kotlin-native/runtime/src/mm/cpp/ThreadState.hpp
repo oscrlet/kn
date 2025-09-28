@@ -29,6 +29,13 @@ const char* ThreadStateName(ThreadState state) noexcept;
 // Switches the state of the given thread to `newState` and returns the previous thread state.
 PERFORMANCE_INLINE inline ThreadState SwitchThreadState(mm::ThreadData* threadData, ThreadState newState, bool reentrant = false) noexcept {
     RuntimeAssert(threadData != nullptr, "threadData must not be nullptr");
+#ifdef USE_CRT
+    if (newState == ThreadState::kRunnable) {
+        threadData->GetThreadHolder()->TransferToRunning();
+    } else {
+        threadData->GetThreadHolder()->TransferToNative();
+    }
+#endif
     auto oldState = threadData->setState(newState);
     // TODO(perf): Mesaure the impact of this assert in debug and opt modes.
     RuntimeAssert(internal::isStateSwitchAllowed(oldState, newState, reentrant),

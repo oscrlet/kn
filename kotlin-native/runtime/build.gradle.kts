@@ -69,10 +69,23 @@ bitcode {
                 main {
                     inputFiles.from(srcRoot.dir("./"));
                     inputFiles.include("**/*.cpp")
+                    val isWindows = target.family == Family.MINGW
+                    val isLinux = target.family == Family.LINUX
+                    val isMacOS = target.family == Family.OSX
+
+                    if (isWindows) inputFiles.include("platform/windows/**")
+                    if (isLinux) inputFiles.include("platform/unix/linux/**")
+                    if (isMacOS) inputFiles.include("platform/unix/mac/**")
+
+                    // Exclude some unused file copied from CRT, remove later
                     inputFiles.exclude("**/tests/",
-                                       "platform/arm64/**", "platform/windows/", "platform/unix/linux/**",
                                        "./log/tests/",
                                        "./mutator/tests", "third_party/**", "common_runtime/base/**")
+                    // Exclude other platforms
+                    if (!isWindows) inputFiles.exclude("platform/windows/**")
+                    if (!isLinux) inputFiles.exclude("platform/unix/linux/**")
+                    if (!isMacOS) inputFiles.exclude("platform/unix/mac/**")
+
                     headersDirs.setFrom(srcRoot.dir("../"), 
                     srcRoot.dir("./"), 
                     srcRoot.dir("../common_interfaces"), 

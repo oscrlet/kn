@@ -177,6 +177,22 @@ void BaseRuntime::WriteBarrier(void* obj, void* field, void* ref)
         *reinterpret_cast<RefField<>*>(field), reinterpret_cast<BaseObject*>(ref));
 }
 
+void* BaseRuntime::CompareAndSwapRefField(void* obj, void* field, void* expected, void* desired, std::memory_order succOrder, std::memory_order failOrder) {
+    return reinterpret_cast<void*>(Heap::GetBarrier().CompareAndSwapRefField(
+            reinterpret_cast<BaseObject*>(obj), 
+            *reinterpret_cast<RefField<true>*>(field), 
+            reinterpret_cast<BaseObject*>(expected),
+            reinterpret_cast<BaseObject*>(desired),
+            succOrder,
+            failOrder));
+}
+
+
+void* BaseRuntime::AtomicSwapBarrier(void* obj, void* field, void* ref, std::memory_order order) {
+    return reinterpret_cast<void*>(Heap::GetBarrier().AtomicSwapRefField(
+            reinterpret_cast<BaseObject*>(obj), *reinterpret_cast<RefField<true>*>(field), reinterpret_cast<BaseObject*>(ref), order));
+}
+
 void* BaseRuntime::ReadBarrier(void* obj, void* field)
 {
     return reinterpret_cast<void*>(Heap::GetBarrier().ReadRefField(reinterpret_cast<BaseObject*>(obj),

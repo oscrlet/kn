@@ -29,6 +29,8 @@
 #include "Utils.hpp"
 #include "MemoryDump.hpp"
 
+#include "common_interfaces/base_runtime.h"
+
 using namespace kotlin;
 
 #ifdef KONAN_OBJC_INTEROP
@@ -256,7 +258,11 @@ extern "C" RUNTIME_NOTHROW ObjHeader** LookupTLS(void** key, int index) {
 }
 
 extern "C" void Kotlin_native_internal_GC_collect(ObjHeader*) {
+#ifdef USE_CRT
+    common::BaseRuntime::RequestGC(common::GCReason::GC_REASON_USER , false, common::GCType::GC_TYPE_FULL);
+#else
     mm::GlobalData::Instance().gcScheduler().scheduleAndWaitFinalized();
+#endif
 }
 
 extern "C" void Kotlin_native_internal_GC_schedule(ObjHeader*) {

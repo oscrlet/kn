@@ -121,7 +121,9 @@ void IdleBarrier::WriteBarrier(BaseObject* obj, RefField<false>& field, BaseObje
     if (!Heap::IsTaggedObject((HeapAddress)ref)) {
         return;
     }
+#ifdef CRT
     UpdateRememberSet(obj, ref);
+#endif
     DLOG(BARRIER, "write obj %p ref@%p: %p => %p", obj, &field, field.GetTargetObject(), ref);
 }
 

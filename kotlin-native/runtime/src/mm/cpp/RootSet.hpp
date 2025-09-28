@@ -96,7 +96,11 @@ public:
     };
 
     struct Value {
+#ifdef USE_CRT
+        ObjHeader* &object;
+#else
         ObjHeader* object;
+#endif
         Source source;
 
         bool operator==(const Value& rhs) const noexcept { return object == rhs.object && source == rhs.source; }

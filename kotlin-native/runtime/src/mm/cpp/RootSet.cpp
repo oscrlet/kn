@@ -88,8 +88,11 @@ mm::GlobalRootSet::Value mm::GlobalRootSet::Iterator::operator*() noexcept {
     switch (phase_) {
         case Phase::kGlobals:
             return {**globalsIterator_, Source::kGlobal};
+#ifndef USE_CRT
+// TODO: [CRZ]在CRT中暂不处理StableRefs.
         case Phase::kStableRefs:
             return {*specialRefsIterator_, Source::kStableRef};
+#endif
         case Phase::kDone:
             RuntimeFail("Cannot dereference");
     }
@@ -130,7 +133,11 @@ void mm::GlobalRootSet::Iterator::Init() noexcept {
         switch (phase_) {
             case Phase::kGlobals:
                 if (globalsIterator_ != owner_.globalsIterable_.end()) return;
+#ifdef USE_CRT
+                phase_ = Phase::kDone; 
+#else
                 phase_ = Phase::kStableRefs;
+#endif
                 specialRefsIterator_ = owner_.specialRefsIterable_.begin();
                 break;
             case Phase::kStableRefs:
