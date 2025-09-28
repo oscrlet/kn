@@ -117,6 +117,61 @@ inline static void InitLog() {
 
 void Kotlin_deinitRuntimeCallback(void* argument);
 
+static uintptr_t KEXE_ADDR_START_ = UINTPTR_MAX;
+static uintptr_t KEXE_ADDR_END_ = 0;
+
+void initAddressScope() {
+#if defined(_WIN64)
+    // TODO: does not support windows yet
+    std::abort();
+#elif defined(__aarch64__) 
+    // TBI does not need this
+#else
+    std::string procFileName("/proc/self/maps");
+
+    auto endsWith = [](const std::string& str, const std::string& suffix) {
+        if (suffix.length() > str.length()) {
+            return false;
+        }
+        return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
+    };
+
+    auto GetSoAddrScope = [&](const std::string& str, uintptr_t& startAddr, uintptr_t& endAddr) {
+        int pos1 = str.find('-');
+        int pos2 = str.find(' ');
+        if (pos1 < 0 || pos2 < pos1) {
+            return;
+        }
+        constexpr int8_t baseValue = 16;
+        uintptr_t start = std::strtoull(str.substr(0, static_cast<uint64_t>(pos1)).c_str(), nullptr, baseValue);
+        startAddr = start < startAddr ? start : startAddr;
+        uintptr_t end = std::strtoull(str.substr(pos1 + 1, static_cast<uint64_t>(pos2 - pos1)).c_str(), nullptr, baseValue);
+        endAddr = end > endAddr ? end : endAddr;
+    };
+
+    FILE* file = fopen(procFileName.c_str(), "r");
+    if (file == nullptr) {
+        // TODO: Refactor to fatal message
+        std::abort();
+        return;
+    }
+    const int bufSize = 1024;
+    char buf[bufSize] = { '\0' };
+    while (fgets(buf, bufSize, file) != nullptr) {
+        std::string lineStr(buf);
+        int protPos = lineStr.find(' ');
+        if (protPos < 0) {
+            continue;
+        }
+        std::string baseName = std::string(basename(lineStr.c_str()));
+        if (endsWith(baseName, "kexe\n")) {
+            GetSoAddrScope(lineStr, KEXE_ADDR_START_, KEXE_ADDR_END_);
+        } 
+    }
+    printf("Range %ld - %ld\n", KEXE_ADDR_START_, KEXE_ADDR_END_);
+#endif
+}
+
 RuntimeState* initRuntime() {
 
   SetKonanTerminateHandler();
@@ -133,10 +188,10 @@ RuntimeState* initRuntime() {
   bool firstRuntime = initializeGlobalRuntimeIfNeeded();
 #ifdef USE_CRT
   if (firstRuntime) {
+      initAddressScope();
       common::RuntimeParam param = common::BaseRuntimeParam::DefaultRuntimeParam();
      // param.gcParam.enableGC = false;
       param.gcParam.enableStwGC = false;
-      param.heapParam.heapSize = 4ULL * common::GB;
       // param.gcParam.gcInterval = 100000;
       // param.gcParam.garbageThreshold = 0.1;
       // param.gcParam.gcThreads = 1;
@@ -199,6 +254,24 @@ void Kotlin_deinitRuntimeCallback(void* argument) {
 }
 
 }  // namespace
+
+bool kotlin::isValidKotlinObject(uintptr_t obj) noexcept {
+    static constexpr uintptr_t IsForwardedMask = (1ULL << 63); 
+    static constexpr uintptr_t ToVersionMask = (1ULL << 48) - 1;
+    if (!common::Heap::IsHeapAddress(obj)) {
+        return false;
+    }
+    auto typeInfo = *reinterpret_cast<uintptr_t*>(obj);
+    // for the sake when typeinfo is forwarded awawy
+    if (typeInfo & IsForwardedMask) {
+        auto toVersion = typeInfo & ToVersionMask;
+        return isValidKotlinObject(toVersion);
+    }
+    if (typeInfo >= KEXE_ADDR_START_ && typeInfo <= KEXE_ADDR_END_) {
+        return *reinterpret_cast<uintptr_t*>(typeInfo) == typeInfo;
+    }
+    return false;
+}
 
 bool kotlin::initializeGlobalRuntimeIfNeeded() noexcept {
     auto lastStatus = std_support::atomic_compare_swap_strong(globalRuntimeStatus, kGlobalRuntimeUninitialized, kGlobalRuntimeRunning);

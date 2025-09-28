@@ -51,6 +51,9 @@ namespace kotlin {
 // Returns `true` if initialized.
 bool initializeGlobalRuntimeIfNeeded() noexcept;
 
+// TODO: This is a tmp helper method to helper determien a valid object header under x86
+// This should be removed once we have a proper stackmap
+bool isValidKotlinObject(uintptr_t obj) noexcept;
 }
 
 #endif // RUNTIME_RUNTIME_H
