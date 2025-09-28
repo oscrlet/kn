@@ -6,6 +6,7 @@
 #include "SafePoint.hpp"
 
 #include <atomic>
+#include "macros.h"
 
 #define _DARWIN_C_SOURCE
 #include <pthread.h>
@@ -140,10 +141,22 @@ mm::SafePointActivator::~SafePointActivator() {
 ALWAYS_INLINE void mm::safePoint(std::memory_order fastPathOrder) noexcept {
     AssertThreadState(ThreadState::kRunnable);
 #ifdef USE_CRT
+    uint64_t safePointFlag = 0;
+#ifdef __aarch64__
+    asm volatile (
+        "ubfx %0, x28, 63, 1\n"
+        : "=r"(safePointFlag)
+    );
+#endif
+    if (LIKELY(safePointFlag == 0)) {
+        return;
+    }
     auto *threadHolder = common::ThreadHolder::GetCurrent();
     if (threadHolder->HasSuspendRequest()) {
         threadHolder->WaitSuspension();
     }
+
+    common::UpdateThreadLocalDataReg();
 #else
 
     auto action = safePointAction.load(fastPathOrder);
@@ -157,10 +170,22 @@ ALWAYS_INLINE void mm::safePoint(std::memory_order fastPathOrder) noexcept {
 ALWAYS_INLINE void mm::safePoint(mm::ThreadData& threadData, std::memory_order fastPathOrder) noexcept {
     AssertThreadState(&threadData, ThreadState::kRunnable);
 #ifdef USE_CRT
+    uint64_t safePointFlag = 0;
+#ifdef __aarch64__
+    asm volatile (
+        "ubfx %0, x28, 63, 1\n"
+        : "=r"(safePointFlag)
+    );
+#endif
+    if (LIKELY(safePointFlag == 0)) {
+        return;
+    }
     auto *threadHolder = threadData.GetThreadHolder();
     if (threadHolder->HasSuspendRequest()) {
         threadHolder->WaitSuspension();
     }
+
+    common::UpdateThreadLocalDataReg();
 #else
     auto action = safePointAction.load(fastPathOrder);
 

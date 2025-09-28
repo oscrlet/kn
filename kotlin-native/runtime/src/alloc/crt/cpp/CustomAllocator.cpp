@@ -57,7 +57,8 @@ static inline common::Address AllocFromCMC(size_t size) {
     size_t allocSize = common::RegionSpace::ToAllocatedSize(size);
 #ifdef __aarch64__
     asm volatile(
-        "ldr %2, [x28]\n"    // get Alloc Buffer
+        "ubfx x27, x28, #0, #62\n"     // get ThreadLocalData
+        "ldr %2, [x27]\n"    // get Alloc Buffer
         "ldr %2, [%2]\n"     // get region ptr
         "ldr %0, [%2]\n"     // get allocPtr
         "ldr %1, [%2, #8]\n" // get regionEnd
@@ -66,7 +67,9 @@ static inline common::Address AllocFromCMC(size_t size) {
 #endif
     auto endOfAlloc = allocPtr + allocSize;
     if (UNLIKELY(endOfAlloc > regionEnd)) {
-        return common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
+        allocPtr = common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
+        common::UpdateThreadLocalDataReg();
+        return allocPtr;
     }
 #ifndef NDEBUG
     static size_t count = 0;

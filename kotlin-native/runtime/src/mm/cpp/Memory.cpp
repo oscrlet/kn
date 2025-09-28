@@ -154,7 +154,16 @@ extern "C" RUNTIME_NOTHROW void InitAndRegisterGlobal(ObjHeader** location, cons
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW ObjHeader *ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
-    // DumpHeapRef(location, thisPtr, "loaded");
+    uint64_t needBarrier = 0;
+#ifdef __aarch64__
+    asm volatile (
+        "ubfx %0, x28, 62, 1\n"
+        : "=r"(needBarrier)
+    );
+#endif
+    if (LIKELY(needBarrier == 0)) {
+        return *location;
+    }
     return mm::RefAccessor<false>(location, thisPtr);
 }
 
