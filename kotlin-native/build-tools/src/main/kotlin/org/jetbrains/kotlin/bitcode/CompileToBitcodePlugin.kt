@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.konan.target.PlatformManager
 import org.jetbrains.kotlin.konan.target.SanitizerKind
 import org.jetbrains.kotlin.konan.target.TargetDomainObjectContainer
 import org.jetbrains.kotlin.konan.target.TargetWithSanitizer
+import org.jetbrains.kotlin.konan.target.Architecture as TargetArchitecture
 import org.jetbrains.kotlin.konan.target.enabledTargets
 import org.jetbrains.kotlin.nativeDistribution.nativeProtoDistribution
 import org.jetbrains.kotlin.testing.native.GoogleTestExtension
@@ -148,22 +149,40 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
     }
 
     // TODO: These should be set by the plugin users.
+    val isCRTBuild = project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true)
     val isReleaseBuild = project.kotlinBuildProperties.getBoolean("kotlin.native.release", false)
-    private val DEFAULT_CPP_FLAGS = listOfNotNull(
-        "-DUSE_CRT".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
-        "-ffixed-x27".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
-        "-ffixed-x28".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
-        "-std=c++17",
-        "-fno-aligned-allocation",
-        "-Wno-unused-parameter",
-        "-Wall",
-        "-Wextra",
-        // "-Werror"
+    val isGcFastPathEnabled = project.kotlinBuildProperties.getBoolean("kotlin.native.gc_fastpath", true)
+
+    // decide flags related to gc fastpath
+    private fun getCppGcFastpathFlags(target: KonanTarget): List<String> {
+        return if (isCRTBuild && isGcFastPathEnabled) {
+            listOf("-DENABLE_GC_FASTPATH") + 
+            when (target.architecture) {
+                TargetArchitecture.ARM64, -> listOf("-ffixed-x27", "-ffixed-x28")
+                TargetArchitecture.ARM32, -> listOf("")
+                TargetArchitecture.X86, TargetArchitecture.X64 -> listOf("")
+                else -> listOf("")
+            }
+        } else {
+            listOf("")
+        }
+    }
+
+    private fun getDefaultCppFlags(target: KonanTarget): List<String> {
+        return getCppGcFastpathFlags(target) + listOfNotNull(
+            "-DUSE_CRT".takeIf { isCRTBuild },
+            "-std=c++17",
+            "-fno-aligned-allocation",
+            "-Wno-unused-parameter",
+            "-Wall",
+            "-Wextra",
+            // "-Werror"
         ) + if (isReleaseBuild) {
             listOf("-O2", "-DNDEBUG")
         } else {
             listOf("-O0", "-g", "-gdwarf-2")
         }
+    }
 
     private val allTestsTasks by lazy {
         val name = project.name.capitalized
@@ -551,7 +570,7 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
                     this.srcRoot.convention(project.layout.projectDirectory.dir("src/$name"))
                     this.headersDirs.from(this.srcRoot.dir("cpp"))
                     this.compiler.convention("clang++")
-                    this.compilerArgs.set(owner.DEFAULT_CPP_FLAGS)
+                    this.compilerArgs.set(owner.getDefaultCppFlags(_target.target))
                     this.compilerWorkingDirectory.set(project.layout.projectDirectory.dir("src"))
                 }
             }

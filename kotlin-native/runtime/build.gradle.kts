@@ -267,8 +267,6 @@ bitcode {
                 testFixtures {}
             }
 
-            compilerArgs.add("-ffixed-x27")
-            compilerArgs.add("-ffixed-x28")
         }
 
         module("custom_alloc") {
