@@ -82,26 +82,26 @@ bitcode {
                     if (!isLinux) inputFiles.exclude("platform/unix/linux/**")
                     if (!isMacOS) inputFiles.exclude("platform/unix/mac/**")
 
-                    headersDirs.setFrom(srcRoot.dir("../"), 
-                    srcRoot.dir("./"), 
-                    srcRoot.dir("../common_interfaces"), 
+                    headersDirs.setFrom(srcRoot.dir("../"),
+                    srcRoot.dir("./"),
+                    srcRoot.dir("../common_interfaces"),
                     srcRoot.dir("../libpandabase"),
-                    srcRoot.dir("../third_party_bounds_checking_function/include")) 
+                    srcRoot.dir("../third_party_bounds_checking_function/include"))
                 }
             }
         }
-        
+
         module("tests") {
             sourceSets{
                 main {
                     inputFiles.from(srcRoot.dir("./"));
                     inputFiles.include("**/*.cpp")
                     //inputFiles.exclude("**/tests/")
-                    headersDirs.setFrom(srcRoot.dir("../"), 
-                    srcRoot.dir("./"), 
-                    srcRoot.dir("../common_interfaces"), 
+                    headersDirs.setFrom(srcRoot.dir("../"),
+                    srcRoot.dir("./"),
+                    srcRoot.dir("../common_interfaces"),
                     srcRoot.dir("../libpandabase"),
-                    srcRoot.dir("../third_party_bounds_checking_function/include")) 
+                    srcRoot.dir("../third_party_bounds_checking_function/include"))
                 }
             }
         }
@@ -114,11 +114,11 @@ bitcode {
                     inputFiles.exclude("**/tests/", "os/**", "mem/**", "arch/**", "utils/json_parser.cpp",
                     "utils/logger.cpp", "utils/time.cpp", "utils/timers.cpp",
                     "utils/type_converter.cpp", "utils/utf.cpp", "utils/workerQueue.cpp")
-                    headersDirs.setFrom(srcRoot.dir("../"), 
-                    srcRoot.dir("./"), 
-                    srcRoot.dir("../common_interfaces"), 
+                    headersDirs.setFrom(srcRoot.dir("../"),
+                    srcRoot.dir("./"),
+                    srcRoot.dir("../common_interfaces"),
                     srcRoot.dir("../libpandabase"),
-                    srcRoot.dir("../third_party_bounds_checking_function/include")) 
+                    srcRoot.dir("../third_party_bounds_checking_function/include"))
                 }
             }
         }
@@ -130,10 +130,10 @@ bitcode {
                     inputFiles.include("src/sprintf_s.c", "src/memmove_s.c", "src/memcpy_s.c", "src/vsprintf_s.c", "src/memset_s.c")
                     inputFiles.exclude("**/tests/", "src/securecutil.c")
                     headersDirs.setFrom(srcRoot.dir("../"),
-                    srcRoot.dir("./"), 
-                    srcRoot.dir("../common_interfaces"), 
+                    srcRoot.dir("./"),
+                    srcRoot.dir("../common_interfaces"),
                     srcRoot.dir("../libpandabase"),
-                    srcRoot.dir("../third_party_bounds_checking_function/include")) 
+                    srcRoot.dir("../third_party_bounds_checking_function/include"))
                 }
             }
        }
@@ -267,6 +267,8 @@ bitcode {
                 testFixtures {}
             }
 
+            compilerArgs.add("-ffixed-x27")
+            compilerArgs.add("-ffixed-x28")
         }
 
         module("custom_alloc") {

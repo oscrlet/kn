@@ -73,7 +73,7 @@ public:
 
     void Publish() noexcept {
         // TODO: These use separate locks, which is inefficient.
-        
+
         // TODO: This publishes:
         // 1. all global roots in thread-local to public
         // 2. All TLS special ref to public

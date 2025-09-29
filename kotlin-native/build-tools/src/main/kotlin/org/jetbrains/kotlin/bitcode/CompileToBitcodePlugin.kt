@@ -151,6 +151,8 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
     val isReleaseBuild = project.kotlinBuildProperties.getBoolean("kotlin.native.release", false)
     private val DEFAULT_CPP_FLAGS = listOfNotNull(
         "-DUSE_CRT".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
+        "-ffixed-x27".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
+        "-ffixed-x28".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
         "-std=c++17",
         "-fno-aligned-allocation",
         "-Wno-unused-parameter",
@@ -158,7 +160,7 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
         "-Wextra",
         // "-Werror"
         ) + if (isReleaseBuild) {
-            listOf("-O2", "-DNDEBUG") 
+            listOf("-O2", "-DNDEBUG")
         } else {
             listOf("-O0", "-g", "-gdwarf-2")
         }
@@ -250,6 +252,7 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
                 val nativeRoot = project.rootProject.layout.projectDirectory.dir("kotlin-native")
                 this.arguments.add("-I${nativeRoot.dir("runtime/src").asFile.absolutePath}")
                 this.arguments.add("-I${nativeRoot.dir("runtime/src/common_interfaces").asFile.absolutePath}")
+                this.arguments.add("-I${nativeRoot.dir("runtime/src/common_components").asFile.absolutePath}")
                 this.arguments.add("-I${nativeRoot.dir("runtime/src/third_party_bounds_checking_function/include").asFile.absolutePath}")
                 this.arguments.add("-I${nativeRoot.dir("runtime/src/libpandabase").asFile.absolutePath}")
                 this.arguments.add("-I${nativeRoot.dir("runtime/src/alloc/srt/cpp").asFile.absolutePath}")

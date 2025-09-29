@@ -16,7 +16,10 @@
 #ifndef COMMON_COMPONENTS_MUTATOR_MUTATOR_H
 #define COMMON_COMPONENTS_MUTATOR_MUTATOR_H
 
+#include <arm/types.h>
 #include <climits>
+#include <cstdint>
+#include <cstdlib>
 
 #include "common_components/heap/allocator/allocator.h"
 #include "common_components/heap/collector/gc_infos.h"
@@ -24,6 +27,7 @@
 #include "common_components/mutator/satb_buffer.h"
 #include "common_interfaces/thread/mutator_base.h"
 #include "common_interfaces/thread/thread_holder.h"
+#include "main/cpp/Common.h"
 
 namespace common {
 class Mutator;
@@ -84,6 +88,11 @@ public:
     uint32_t GetTid() const { return tid_; }
     void* GetArkthreadPtr() const {return thread_;}
     void* GetEcmaVMPtr() const {return ecmavm_;}
+
+    __attribute__((always_inline)) inline uint32_t GetSafepointActiveState()
+    {
+        return mutatorBase_.GetSafepointActiveState();
+    }
 
     __attribute__((always_inline)) inline void SetSafepointActive(bool state)
     {
@@ -357,6 +366,51 @@ private:
 void PreRunManagedCode(Mutator* mutator, int layers, ThreadLocalData* threadData);
 
 ThreadLocalData *GetThreadLocalData();
+static ALWAYS_INLINE void SetThreadLocalDataToFixedReg() {
+#ifdef ENABLE_GC_FASTPATH
+  auto tlsPtr = GetThreadLocalData();
+#ifdef __aarch64__
+  __asm__ volatile ("mov x28, %0" : : "r"(tlsPtr));
+#endif
+#endif
+}
+
+/*
+ * x28 register layout (from high to low):
+ * | 1 bit: safepoint active state | 1 bit: need barrier | 62 bits: ThreadLocalData* |
+ * The highest 1 bit is used to indicate whether the current thread is in a safepoint.
+ * The second highest 1 bit is used to indicate whether the current thread needs to use the read barrier.
+ * */
+static ALWAYS_INLINE void UpdateThreadLocalDataReg() {
+#ifdef ENABLE_GC_FASTPATH
+  Mutator* mutator;
+#ifdef __aarch64__
+  __asm__ volatile (
+    "ubfx x27, x28, #0, #62\n"     // get ThreadLocalData
+    "ldr %0, [x27, #8]\n"
+    "ldr %0, [x27, #8]"
+    : "=r"(mutator)
+  );
+#endif // __aarch64__
+  uintptr_t safePointState = mutator->GetSafepointActiveState();
+  uint64_t needBarrier = mutator->GetMutatorPhase() > 8;
+  auto flag = safePointState << 63 | needBarrier << 62;
+#ifdef __aarch64__
+  __asm__ volatile ("orr x28, x28, %0" : : "r"(flag));
+#endif // __aarch64__
+#ifdef DEBUG
+  uintptr_t x28;
+  __asm__ volatile ("mov %0, x28" : "=r"(x28));
+  std::cout << "--------------------------------\n";
+  std::cout << "UpdateThreadLocalState x28: " << std::hex << x28 << std::dec << "\n";
+  std::cout << "GetThreadLocalData(): " << std::hex << (uintptr_t)GetThreadLocalData() << std::dec << "\n";
+  std::cout << "--------------------------------\n";
+  if (x28 % 0x3FFFFFFFFFFFFFFF != (uintptr_t)GetThreadLocalData()) {
+      std::abort();
+  }
+#endif // DEBUG
+#endif // ENABLE_GC_FASTPATH
+}
 } // namespace common
 
 #endif // COMMON_COMPONENTS_MUTATOR_MUTATOR_H

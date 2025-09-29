@@ -6,6 +6,7 @@
 #include "SafePoint.hpp"
 
 #include <atomic>
+#include "macros.h"
 
 #define _DARWIN_C_SOURCE
 #include <pthread.h>
@@ -140,34 +141,65 @@ mm::SafePointActivator::~SafePointActivator() {
 ALWAYS_INLINE void mm::safePoint(std::memory_order fastPathOrder) noexcept {
     AssertThreadState(ThreadState::kRunnable);
 #ifdef USE_CRT
+#ifdef ENABLE_GC_FASTPATH
+    uint64_t safePointFlag = 0;
+#ifdef __aarch64__
+    asm volatile (
+        "mov %0, x28\n"
+        : "=r"(safePointFlag)
+    );
+#endif // __aarch64__
+    if (LIKELY(safePointFlag >> 63 == 0)) {
+        return;
+    }
+    auto *mutator = reinterpret_cast<common::ThreadLocalData*>(safePointFlag & 0x3FFFFFFFFFFFFFFF)->mutator;
+    mutator->DoLeaveSaferegion();
+    common::UpdateThreadLocalDataReg();
+#else
     auto *threadHolder = common::ThreadHolder::GetCurrent();
     if (threadHolder->HasSuspendRequest()) {
         threadHolder->WaitSuspension();
     }
+#endif // ENABLE_GC_FASTPATH
 #else
-
     auto action = safePointAction.load(fastPathOrder);
 
     if (__builtin_expect(action != nullptr, false)) {
         slowPath();
     }
-#endif
+#endif // USE_CRT
 }
 
 ALWAYS_INLINE void mm::safePoint(mm::ThreadData& threadData, std::memory_order fastPathOrder) noexcept {
     AssertThreadState(&threadData, ThreadState::kRunnable);
 #ifdef USE_CRT
+#ifdef ENABLE_GC_FASTPATH
+    uint64_t safePointFlag = 0;
+#ifdef __aarch64__
+    asm volatile (
+        "mov %0, x28\n"
+        : "=r"(safePointFlag)
+    );
+#endif // __aarch64__
+    if (LIKELY(safePointFlag >> 63 == 0)) {
+        return;
+    }
+    auto *mutator = reinterpret_cast<common::ThreadLocalData*>(safePointFlag & 0x3FFFFFFFFFFFFFFF)->mutator;
+    mutator->DoLeaveSaferegion();
+    common::UpdateThreadLocalDataReg();
+#else
     auto *threadHolder = threadData.GetThreadHolder();
     if (threadHolder->HasSuspendRequest()) {
         threadHolder->WaitSuspension();
     }
+#endif // ENABLE_GC_FASTPATH
 #else
     auto action = safePointAction.load(fastPathOrder);
 
     if (__builtin_expect(action != nullptr, false)) {
         slowPath(threadData);
     }
-#endif
+#endif // USE_CRT
 
 }
 

@@ -5,6 +5,7 @@
 
 #include "CustomAllocator.hpp"
 
+#include <arm/types.h>
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
@@ -13,6 +14,7 @@
 #include <unistd.h>
 #include <new>
 
+#include "Common.h"
 #include "CustomLogging.hpp"
 #include "ExtraObjectData.hpp"
 #include "ExtraObjectPage.hpp"
@@ -24,6 +26,7 @@
 #include "Memory.h"
 #include "FixedBlockPage.hpp"
 #include "GCApi.hpp"
+#include "heap/allocator/region_space.h"
 #include "hooks.h"
 
 #include "common_interfaces/base_runtime.h"
@@ -31,6 +34,7 @@
 #include "common_interfaces/heap/heap_allocator.h"
 #include "common_components/heap/heap.h"
 #include "common_components/heap/allocator/region_desc.h"
+#include "macros.h"
 
 namespace kotlin::alloc {
 
@@ -43,11 +47,55 @@ CustomAllocator::~CustomAllocator() {
     heap_.AddToFinalizerQueue(std::move(finalizerQueue_));
 }
 
+static inline common::Address AllocFromCMC(size_t size) {
+#ifndef ENABLE_GC_FASTPATH
+    return common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
+#else
+    common::Address allocPtr;
+    uintptr_t regionEnd;
+    uintptr_t *regionPtr;
+    size_t allocSize = common::RegionSpace::ToAllocatedSize(size);
+#ifdef __aarch64__
+    asm volatile(
+        "ubfx x27, x28, #0, #62\n"     // get ThreadLocalData
+        "ldr %2, [x27]\n"    // get Alloc Buffer
+        "ldr %2, [%2]\n"     // get region ptr
+        "ldr %0, [%2]\n"     // get allocPtr
+        "ldr %1, [%2, #8]\n" // get regionEnd
+        : "=r"(allocPtr), "=r"(regionEnd), "=r"(regionPtr)
+    );
+#endif // __aarch64__
+    auto endOfAlloc = allocPtr + allocSize;
+    if (UNLIKELY(endOfAlloc > regionEnd)) {
+        allocPtr = common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
+        common::UpdateThreadLocalDataReg();
+        return allocPtr;
+    }
+#ifndef NDEBUG
+    static size_t count = 0;
+    ++count;
+    std::cout << "FastAlloc: " << count << " times\n";
+    allocPtr += allocSize;
+    auto slowAlloc = common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
+
+    if (allocPtr != slowAlloc) {
+        std::cout << "FastAlloc: " << std::hex << allocPtr << " SlowAlloc " << slowAlloc << std::dec << " mismatch\n";
+        std::cout << "allocBase: " << std::hex << allocPtr - allocSize << " allocEnd: " << regionEnd << std::dec
+            << " size: " << size << " allocSize " << allocSize  << "\n";
+        std::abort();
+    }
+    return slowAlloc;
+#endif // NDEBUG
+    *regionPtr = endOfAlloc;
+    return allocPtr;
+#endif // ENABLE_GC_FASTPATH
+}
+
 ALWAYS_INLINE ObjHeader* CustomAllocator::CreateObject(const TypeInfo* typeInfo) noexcept {
     RuntimeAssert(!typeInfo->IsArray(), "Must not be an array");
     auto descriptor = CustomHeapObject::descriptorFrom(typeInfo);
     // 在这里接入Common Runtime 的Allocate.
-    auto& heapObject = *descriptor.construct(reinterpret_cast<uint8_t*>(common::HeapAllocator::AllocateInYoungOrHuge(descriptor.size(), common::LanguageType::DYNAMIC)));
+    auto& heapObject = *descriptor.construct(reinterpret_cast<uint8_t*>(AllocFromCMC(descriptor.size())));
     // auto& heapObject = *descriptor.construct(Allocate(descriptor.size()));
     ObjHeader* object = heapObject.object();
     if (typeInfo->flags_ & TF_HAS_FINALIZER) {
@@ -66,7 +114,7 @@ ALWAYS_INLINE ArrayHeader* CustomAllocator::CreateArray(const TypeInfo* typeInfo
     CustomAllocDebug("CustomAllocator@%p::CreateArray(%d)", this ,count);
     RuntimeAssert(typeInfo->IsArray(), "Must be an array");
     auto descriptor = CustomHeapArray::descriptorFrom(typeInfo, count);
-    auto& heapArray = *descriptor.construct(reinterpret_cast<uint8_t*>(common::HeapAllocator::AllocateInYoungOrHuge(descriptor.size(), common::LanguageType::DYNAMIC)));
+    auto& heapArray = *descriptor.construct(reinterpret_cast<uint8_t*>(AllocFromCMC(descriptor.size())));
     // auto& heapArray = *descriptor.construct(Allocate(descriptor.size()));
     ArrayHeader* array = heapArray.array();
     array->typeInfoOrMeta_ = const_cast<TypeInfo*>(typeInfo);
