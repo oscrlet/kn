@@ -151,13 +151,13 @@ open class CompileToBitcodeExtension @Inject constructor(val project: Project) :
     val isReleaseBuild = project.kotlinBuildProperties.getBoolean("kotlin.native.release", false)
     private val DEFAULT_CPP_FLAGS = listOfNotNull(
         "-DUSE_CRT".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
+        "-ffixed-x27".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
+        "-ffixed-x28".takeIf { project.kotlinBuildProperties.getBoolean("kotlin.native.CRT", true) },
         "-std=c++17",
         "-fno-aligned-allocation",
         "-Wno-unused-parameter",
         "-Wall",
         "-Wextra",
-        "-ffixed-x27",
-        "-ffixed-x28",
         // "-Werror"
         ) + if (isReleaseBuild) {
             listOf("-O2", "-DNDEBUG")

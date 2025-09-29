@@ -48,7 +48,7 @@ CustomAllocator::~CustomAllocator() {
 }
 
 static inline common::Address AllocFromCMC(size_t size) {
-#ifdef DISABLE_FAST_ALLOC
+#ifndef ENABLE_GC_FASTPATH
     return common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
 #else
     common::Address allocPtr;
@@ -64,7 +64,7 @@ static inline common::Address AllocFromCMC(size_t size) {
         "ldr %1, [%2, #8]\n" // get regionEnd
         : "=r"(allocPtr), "=r"(regionEnd), "=r"(regionPtr)
     );
-#endif
+#endif // __aarch64__
     auto endOfAlloc = allocPtr + allocSize;
     if (UNLIKELY(endOfAlloc > regionEnd)) {
         allocPtr = common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
@@ -85,10 +85,10 @@ static inline common::Address AllocFromCMC(size_t size) {
         std::abort();
     }
     return slowAlloc;
-#endif
+#endif // NDEBUG
     *regionPtr = endOfAlloc;
     return allocPtr;
-#endif
+#endif // ENABLE_GC_FASTPATH
 }
 
 ALWAYS_INLINE ObjHeader* CustomAllocator::CreateObject(const TypeInfo* typeInfo) noexcept {

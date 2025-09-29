@@ -367,13 +367,22 @@ void PreRunManagedCode(Mutator* mutator, int layers, ThreadLocalData* threadData
 
 ThreadLocalData *GetThreadLocalData();
 static ALWAYS_INLINE void SetThreadLocalDataToFixedReg() {
+#ifdef ENABLE_GC_FASTPATH
   auto tlsPtr = GetThreadLocalData();
 #ifdef __aarch64__
   __asm__ volatile ("mov x28, %0" : : "r"(tlsPtr));
 #endif
+#endif
 }
 
+/*
+ * x28 register layout (from high to low):
+ * | 1 bit: safepoint active state | 1 bit: need barrier | 62 bits: ThreadLocalData* |
+ * The highest 1 bit is used to indicate whether the current thread is in a safepoint.
+ * The second highest 1 bit is used to indicate whether the current thread needs to use the read barrier.
+ * */
 static ALWAYS_INLINE void UpdateThreadLocalDataReg() {
+#ifdef ENABLE_GC_FASTPATH
   Mutator* mutator;
 #ifdef __aarch64__
   __asm__ volatile (
@@ -388,7 +397,7 @@ static ALWAYS_INLINE void UpdateThreadLocalDataReg() {
   auto flag = safePointState << 63 | needBarrier << 62;
 #ifdef __aarch64__
   __asm__ volatile ("orr x28, x28, %0" : : "r"(flag));
-#endif
+#endif // __aarch64__
 #ifdef DEBUG
   uintptr_t x28;
   __asm__ volatile ("mov %0, x28" : "=r"(x28));
@@ -400,6 +409,7 @@ static ALWAYS_INLINE void UpdateThreadLocalDataReg() {
       std::abort();
   }
 #endif // DEBUG
+#endif // ENABLE_GC_FASTPATH
 }
 } // namespace common
 

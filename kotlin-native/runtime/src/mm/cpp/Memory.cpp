@@ -30,6 +30,7 @@
 #include "MemoryDump.hpp"
 
 #include "common_interfaces/base_runtime.h"
+#include "mutator/mutator.h"
 
 using namespace kotlin;
 
@@ -154,16 +155,18 @@ extern "C" RUNTIME_NOTHROW void InitAndRegisterGlobal(ObjHeader** location, cons
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW ObjHeader *ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
+#ifdef ENABLE_GC_FASTPATH
     uint64_t needBarrier = 0;
 #ifdef __aarch64__
     asm volatile (
         "ubfx %0, x28, 62, 1\n"
         : "=r"(needBarrier)
     );
-#endif
+#endif // __aarch64__
     if (LIKELY(needBarrier == 0)) {
         return *location;
     }
+#endif // ENABLE_GC_FASTPATH
     return mm::RefAccessor<false>(location, thisPtr);
 }
 
