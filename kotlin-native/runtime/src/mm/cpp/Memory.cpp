@@ -156,14 +156,9 @@ extern "C" RUNTIME_NOTHROW void InitAndRegisterGlobal(ObjHeader** location, cons
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW ObjHeader *ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
 #ifdef ENABLE_GC_FASTPATH
-    uint64_t needBarrier = 0;
-#ifdef __aarch64__
-    asm volatile (
-        "ubfx %0, x28, 62, 1\n"
-        : "=r"(needBarrier)
-    );
-#endif // __aarch64__
-    if (LIKELY(needBarrier == 0)) {
+    common::ThreadLocalRegisterAccessor tlr;
+    tlr.raw = common::threadLocalReg;
+    if (LIKELY(tlr.data.needBarrier == 0)) {
         return *location;
     }
 #endif // ENABLE_GC_FASTPATH

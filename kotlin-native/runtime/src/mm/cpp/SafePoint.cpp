@@ -142,19 +142,13 @@ ALWAYS_INLINE void mm::safePoint(std::memory_order fastPathOrder) noexcept {
     AssertThreadState(ThreadState::kRunnable);
 #ifdef USE_CRT
 #ifdef ENABLE_GC_FASTPATH
-    uint64_t safePointFlag = 0;
-#ifdef __aarch64__
-    asm volatile (
-        "mov %0, x28\n"
-        : "=r"(safePointFlag)
-    );
-#endif // __aarch64__
-    if (LIKELY(safePointFlag >> 63 == 0)) {
+    common::ThreadLocalRegisterAccessor tlr { .raw = common::threadLocalReg };
+    if (LIKELY(tlr.data.safepointActive == 0)) {
         return;
     }
-    auto *mutator = reinterpret_cast<common::ThreadLocalData*>(safePointFlag & 0x3FFFFFFFFFFFFFFF)->mutator;
+    auto* mutator = reinterpret_cast<common::ThreadLocalData*>(tlr.data.threadLocalData)->mutator;
     mutator->DoLeaveSaferegion();
-    common::UpdateThreadLocalDataReg();
+    common::UpdateThreadLocalDataReg(mutator);
 #else
     auto *threadHolder = common::ThreadHolder::GetCurrent();
     if (threadHolder->HasSuspendRequest()) {
@@ -174,19 +168,13 @@ ALWAYS_INLINE void mm::safePoint(mm::ThreadData& threadData, std::memory_order f
     AssertThreadState(&threadData, ThreadState::kRunnable);
 #ifdef USE_CRT
 #ifdef ENABLE_GC_FASTPATH
-    uint64_t safePointFlag = 0;
-#ifdef __aarch64__
-    asm volatile (
-        "mov %0, x28\n"
-        : "=r"(safePointFlag)
-    );
-#endif // __aarch64__
-    if (LIKELY(safePointFlag >> 63 == 0)) {
+    common::ThreadLocalRegisterAccessor tlr { .raw = common::threadLocalReg };
+    if (LIKELY(tlr.data.safepointActive == 0)) {
         return;
     }
-    auto *mutator = reinterpret_cast<common::ThreadLocalData*>(safePointFlag & 0x3FFFFFFFFFFFFFFF)->mutator;
+    auto* mutator = reinterpret_cast<common::ThreadLocalData*>(tlr.data.threadLocalData)->mutator;
     mutator->DoLeaveSaferegion();
-    common::UpdateThreadLocalDataReg();
+    common::UpdateThreadLocalDataReg(mutator);
 #else
     auto *threadHolder = threadData.GetThreadHolder();
     if (threadHolder->HasSuspendRequest()) {

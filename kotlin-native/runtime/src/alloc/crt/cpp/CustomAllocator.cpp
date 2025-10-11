@@ -35,6 +35,13 @@
 #include "common_components/heap/heap.h"
 #include "common_components/heap/allocator/region_desc.h"
 #include "macros.h"
+#include "mutator/thread_local.h"
+
+namespace common {
+#ifndef __aarch64__
+uintptr_t threadLocalReg = 0;
+#endif
+} // namespace common
 
 namespace kotlin::alloc {
 
@@ -55,20 +62,22 @@ static inline common::Address AllocFromCMC(size_t size) {
     uintptr_t regionEnd;
     uintptr_t *regionPtr;
     size_t allocSize = common::RegionSpace::ToAllocatedSize(size);
+    common::ThreadLocalRegisterAccessor tlr { .raw = common::threadLocalReg };
 #ifdef __aarch64__
     asm volatile(
-        "ubfx x27, x28, #0, #62\n"     // get ThreadLocalData
-        "ldr %2, [x27]\n"    // get Alloc Buffer
+        "ldr %2, [%3]\n"    // get Alloc Buffer
         "ldr %2, [%2]\n"     // get region ptr
         "ldr %0, [%2]\n"     // get allocPtr
         "ldr %1, [%2, #8]\n" // get regionEnd
         : "=r"(allocPtr), "=r"(regionEnd), "=r"(regionPtr)
+        : "r"(tlr.data.threadLocalData)
     );
 #endif // __aarch64__
     auto endOfAlloc = allocPtr + allocSize;
     if (UNLIKELY(endOfAlloc > regionEnd)) {
         allocPtr = common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
-        common::UpdateThreadLocalDataReg();
+        auto mutator = reinterpret_cast<common::ThreadLocalData*>(tlr.data.threadLocalData)->mutator;
+        common::UpdateThreadLocalDataReg(mutator);
         return allocPtr;
     }
 #ifndef NDEBUG
