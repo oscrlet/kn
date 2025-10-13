@@ -5,6 +5,7 @@
 
 #include "Memory.h"
 #include <cstdio>
+#include "Common.h"
 #include "MemoryPrivate.hpp"
 
 #include "Allocator.hpp"
@@ -154,6 +155,10 @@ extern "C" RUNTIME_NOTHROW void InitAndRegisterGlobal(ObjHeader** location, cons
     }
 }
 
+NO_INLINE RUNTIME_NOTHROW ObjHeader *ReadHeapRefSlow(ObjHeader** location, ObjHeader* thisPtr) {
+    return mm::RefAccessor<false>(location, thisPtr);
+}
+
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW ObjHeader *ReadHeapRef(ObjHeader** location, ObjHeader* thisPtr) {
 #ifdef ENABLE_GC_FASTPATH
     common::ThreadLocalRegisterAccessor tlr;
@@ -162,7 +167,7 @@ extern "C" ALWAYS_INLINE RUNTIME_NOTHROW ObjHeader *ReadHeapRef(ObjHeader** loca
         return *location;
     }
 #endif // ENABLE_GC_FASTPATH
-    return mm::RefAccessor<false>(location, thisPtr);
+    return ReadHeapRefSlow(location, thisPtr);
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void ZeroHeapRef(ObjHeader** location, ObjHeader *thisPtr) {

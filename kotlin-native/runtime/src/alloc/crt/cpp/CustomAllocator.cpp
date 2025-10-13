@@ -56,7 +56,17 @@ CustomAllocator::~CustomAllocator() {
     heap_.AddToFinalizerQueue(std::move(finalizerQueue_));
 }
 
-static inline common::Address AllocFromCMC(size_t size) {
+#ifdef ENABLE_GC_FASTPATH
+static NO_INLINE common::Address AllocFromCMCSlowPath(size_t size) {
+    common::ThreadLocalRegisterAccessor tlr { .raw = common::threadLocalReg };
+    auto allocPtr = common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
+    auto mutator = reinterpret_cast<common::ThreadLocalData*>(tlr.data.threadLocalData)->mutator;
+    common::UpdateThreadLocalDataReg(mutator);
+    return allocPtr;
+}
+#endif // ENABLE_GC_FASTPATH
+
+static ALWAYS_INLINE common::Address AllocFromCMC(size_t size) {
 #ifndef ENABLE_GC_FASTPATH
     return common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
 #else
@@ -77,10 +87,7 @@ static inline common::Address AllocFromCMC(size_t size) {
 #endif // __aarch64__
     auto endOfAlloc = allocPtr + allocSize;
     if (UNLIKELY(endOfAlloc > regionEnd)) {
-        allocPtr = common::HeapAllocator::AllocateInYoungOrHuge(size, common::LanguageType::DYNAMIC);
-        auto mutator = reinterpret_cast<common::ThreadLocalData*>(tlr.data.threadLocalData)->mutator;
-        common::UpdateThreadLocalDataReg(mutator);
-        return allocPtr;
+        return AllocFromCMCSlowPath(size);
     }
 #ifndef NDEBUG
     static size_t count = 0;

@@ -23,7 +23,9 @@ void gc::GC::ThreadData::OnSuspendForGC() noexcept { }
 void gc::GC::ThreadData::safePoint() noexcept {}
 
 void gc::GC::ThreadData::onThreadRegistration() noexcept {
+#ifdef ENABLE_GC_FASTPATH
     common::SetThreadLocalDataToFixedReg();
+#endif // ENABLE_GC_FASTPATH
 }
 
 ALWAYS_INLINE void gc::GC::ThreadData::onAllocation(ObjHeader* object) noexcept {}

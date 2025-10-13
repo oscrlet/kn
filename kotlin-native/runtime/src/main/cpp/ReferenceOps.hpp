@@ -64,14 +64,20 @@ public:
 #endif
         return loaded;
 #else
+#ifdef USE_CRT
         return reinterpret_cast<ObjHeader*>(common::BaseRuntime::ReadBarrier(this_, refPtr_));
+#else
+        return *refPtr_;
+#endif
 #endif
     }
 
     ALWAYS_INLINE void store(ObjHeader* desired) noexcept {
+#ifdef USE_CRT
         if (this_) {
             common::BaseRuntime::WriteBarrier(this_, refPtr_, desired);
         }
+#endif // USE_CRT
 #if STRICT_ATOMICS_IN_HEAP
         storeAtomic(desired, std::memory_order_relaxed);
 #else
@@ -100,7 +106,7 @@ public:
         //TODO: Make sure swapBarrier is implemented correctly in CRT
         if (this_) {
             return reinterpret_cast<ObjHeader*>(common::BaseRuntime::AtomicSwapBarrier(this_, refPtr_, desired, order));
-        } 
+        }
         return atomic().exchange(desired, order);
 #else
         return atomic().exchange(desired, order);

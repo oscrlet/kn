@@ -138,6 +138,15 @@ mm::SafePointActivator::~SafePointActivator() {
     }
 }
 
+#ifdef ENABLE_GC_FASTPATH
+NO_INLINE void SafePointSlowPath() noexcept {
+    common::ThreadLocalRegisterAccessor tlr { .raw = common::threadLocalReg };
+    auto* mutator = reinterpret_cast<common::ThreadLocalData*>(tlr.data.threadLocalData)->mutator;
+    mutator->DoLeaveSaferegion();
+    common::UpdateThreadLocalDataReg(mutator);
+}
+#endif // ENABLE_GC_FASTPATH
+
 ALWAYS_INLINE void mm::safePoint(std::memory_order fastPathOrder) noexcept {
     AssertThreadState(ThreadState::kRunnable);
 #ifdef USE_CRT
@@ -146,9 +155,7 @@ ALWAYS_INLINE void mm::safePoint(std::memory_order fastPathOrder) noexcept {
     if (LIKELY(tlr.data.safepointActive == 0)) {
         return;
     }
-    auto* mutator = reinterpret_cast<common::ThreadLocalData*>(tlr.data.threadLocalData)->mutator;
-    mutator->DoLeaveSaferegion();
-    common::UpdateThreadLocalDataReg(mutator);
+    SafePointSlowPath();
 #else
     auto *threadHolder = common::ThreadHolder::GetCurrent();
     if (threadHolder->HasSuspendRequest()) {
@@ -172,9 +179,7 @@ ALWAYS_INLINE void mm::safePoint(mm::ThreadData& threadData, std::memory_order f
     if (LIKELY(tlr.data.safepointActive == 0)) {
         return;
     }
-    auto* mutator = reinterpret_cast<common::ThreadLocalData*>(tlr.data.threadLocalData)->mutator;
-    mutator->DoLeaveSaferegion();
-    common::UpdateThreadLocalDataReg(mutator);
+    SafePointSlowPath();
 #else
     auto *threadHolder = threadData.GetThreadHolder();
     if (threadHolder->HasSuspendRequest()) {

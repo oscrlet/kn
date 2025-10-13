@@ -382,6 +382,7 @@ struct ThreadLocalRegisterAccessor {
     };
 };
 
+#ifdef ENABLE_GC_FASTPATH
 #ifdef __aarch64__
 // x28 is a callee-saved register in AArch64, so we can use it to store ThreadLocalData*
 register uintptr_t threadLocalReg asm("x28");
@@ -390,12 +391,10 @@ extern uintptr_t threadLocalReg;
 #endif // __aarch64__
 
 static ALWAYS_INLINE void SetThreadLocalDataToFixedReg() {
-#ifdef ENABLE_GC_FASTPATH
   auto tlsPtr = GetThreadLocalData();
 #ifdef __aarch64__
   __asm__ volatile ("mov x28, %0" : : "r"(tlsPtr));
-#endif
-#endif
+#endif // __aarch64__
 }
 
 /*
@@ -405,7 +404,6 @@ static ALWAYS_INLINE void SetThreadLocalDataToFixedReg() {
  * The second highest 1 bit is used to indicate whether the current thread needs to use the read barrier.
  * */
 static ALWAYS_INLINE void UpdateThreadLocalDataReg(Mutator* mutator) {
-#ifdef ENABLE_GC_FASTPATH
   uintptr_t safepointActive = static_cast<uintptr_t>(mutator->GetSafepointActiveState());
   uintptr_t needBarrier = static_cast<uintptr_t>(mutator->GetMutatorPhase() > 8 ? 1 : 0);
   uintptr_t maskBits = safepointActive << 1 | needBarrier;
@@ -426,8 +424,8 @@ static ALWAYS_INLINE void UpdateThreadLocalDataReg(Mutator* mutator) {
       std::abort();
   }
 #endif // DEBUG
-#endif // ENABLE_GC_FASTPATH
 }
+#endif // ENABLE_GC_FASTPATH
 } // namespace common
 
 #endif // COMMON_COMPONENTS_MUTATOR_MUTATOR_H

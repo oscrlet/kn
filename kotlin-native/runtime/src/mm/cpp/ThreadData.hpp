@@ -37,12 +37,13 @@ public:
         gcScheduler_(GlobalData::Instance().gcScheduler(), *this),
         allocator_(GlobalData::Instance().allocator()),
         gc_(GlobalData::Instance().gc(), *this),
-        suspensionData_(ThreadState::kNative, *this),
-        threadHolder(nullptr) {
+        suspensionData_(ThreadState::kNative, *this) {
+#ifdef USE_CRT
             // Kotlin::ThreadData is 1-1 corresponding to CRT ThreadHolder
             // This also assume ThreadData is created on a new OSThread
             threadHolder = common::ThreadHolder::CreateAndRegisterNewThreadHolder(nullptr);
             threadHolder->BindMutator();
+#endif // USE_CRT
         }
 
     ~ThreadData() = default;
@@ -88,9 +89,11 @@ public:
         allocator_.clearForTests();
     }
 
+#ifdef USE_CRT
     common::ThreadHolder *GetThreadHolder() {
         return threadHolder;
     }
+#endif // USE_CRT
 
 private:
     const uintptr_t threadId_;
@@ -103,7 +106,9 @@ private:
     gc::GC::ThreadData gc_;
     std::vector<std::pair<ObjHeader**, ObjHeader*>> initializingSingletons_;
     ThreadSuspensionData suspensionData_;
-    common::ThreadHolder *threadHolder;
+#ifdef USE_CRT
+    common::ThreadHolder *threadHolder = nullptr;
+#endif // USE_CRT
 };
 
 } // namespace mm
