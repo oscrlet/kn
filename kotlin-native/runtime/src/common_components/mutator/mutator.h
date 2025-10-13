@@ -366,6 +366,27 @@ private:
 void PreRunManagedCode(Mutator* mutator, int layers, ThreadLocalData* threadData);
 
 ThreadLocalData *GetThreadLocalData();
+
+struct ThreadLocalRegisterData {
+    uintptr_t threadLocalData : 62;
+    uintptr_t needBarrier : 1;
+    uintptr_t safepointActive : 1;
+};
+
+struct ThreadLocalRegisterAccessor {
+    union {
+        ThreadLocalRegisterData data;
+        uintptr_t raw;
+    };
+};
+
+#ifdef __aarch64__
+// x28 is a callee-saved register in AArch64, so we can use it to store ThreadLocalData*
+register uintptr_t threadLocalReg asm("x28");
+#else
+extern uintptr_t threadLocalReg;
+#endif // __aarch64__
+
 static ALWAYS_INLINE void SetThreadLocalDataToFixedReg() {
 #ifdef ENABLE_GC_FASTPATH
   auto tlsPtr = GetThreadLocalData();
@@ -381,31 +402,25 @@ static ALWAYS_INLINE void SetThreadLocalDataToFixedReg() {
  * The highest 1 bit is used to indicate whether the current thread is in a safepoint.
  * The second highest 1 bit is used to indicate whether the current thread needs to use the read barrier.
  * */
-static ALWAYS_INLINE void UpdateThreadLocalDataReg() {
+static ALWAYS_INLINE void UpdateThreadLocalDataReg(Mutator* mutator) {
 #ifdef ENABLE_GC_FASTPATH
-  Mutator* mutator;
+  uintptr_t safepointActive = static_cast<uintptr_t>(mutator->GetSafepointActiveState());
+  uintptr_t needBarrier = static_cast<uintptr_t>(mutator->GetMutatorPhase() > 8 ? 1 : 0);
+  uintptr_t maskBits = safepointActive << 1 | needBarrier;
 #ifdef __aarch64__
   __asm__ volatile (
-    "ubfx x27, x28, #0, #62\n"     // get ThreadLocalData
-    "ldr %0, [x27, #8]\n"
-    "ldr %0, [x27, #8]"
-    : "=r"(mutator)
+	    "bfi x28, %0, #62, #2\n"
+      :
+      : "r"(maskBits)
   );
 #endif // __aarch64__
-  uintptr_t safePointState = mutator->GetSafepointActiveState();
-  uint64_t needBarrier = mutator->GetMutatorPhase() > 8;
-  auto flag = safePointState << 63 | needBarrier << 62;
-#ifdef __aarch64__
-  __asm__ volatile ("orr x28, x28, %0" : : "r"(flag));
-#endif // __aarch64__
 #ifdef DEBUG
-  uintptr_t x28;
-  __asm__ volatile ("mov %0, x28" : "=r"(x28));
+  ThreadLocalRegisterAccessor tlr { .raw = threadLocalReg };
   std::cout << "--------------------------------\n";
-  std::cout << "UpdateThreadLocalState x28: " << std::hex << x28 << std::dec << "\n";
+  std::cout << "UpdateThreadLocalState x28: " << std::hex << tlr.raw << std::dec << "\n";
   std::cout << "GetThreadLocalData(): " << std::hex << (uintptr_t)GetThreadLocalData() << std::dec << "\n";
   std::cout << "--------------------------------\n";
-  if (x28 % 0x3FFFFFFFFFFFFFFF != (uintptr_t)GetThreadLocalData()) {
+  if (tlr.data.threadLocalData != (uintptr_t)GetThreadLocalData()) {
       std::abort();
   }
 #endif // DEBUG
