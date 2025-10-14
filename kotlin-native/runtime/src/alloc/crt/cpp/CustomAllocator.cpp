@@ -5,7 +5,9 @@
 
 #include "CustomAllocator.hpp"
 
+#if defined(__aarch64__)
 #include <arm/types.h>
+#endif
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>

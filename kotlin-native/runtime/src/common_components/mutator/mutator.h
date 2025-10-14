@@ -16,7 +16,9 @@
 #ifndef COMMON_COMPONENTS_MUTATOR_MUTATOR_H
 #define COMMON_COMPONENTS_MUTATOR_MUTATOR_H
 
+#if defined(__aarch64__)
 #include <arm/types.h>
+#endif
 #include <climits>
 #include <cstdint>
 #include <cstdlib>
