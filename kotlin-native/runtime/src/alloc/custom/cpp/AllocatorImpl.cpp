@@ -47,6 +47,19 @@ void alloc::Allocator::prepareForGC() noexcept {
     impl_->heap().PrepareForGC();
 }
 
+// region Tencent Code
+void alloc::Allocator::onStartGC() noexcept {
+    alloc::StartCollectGarbagePages();
+    impl_->heap().markGC(true);
+}
+
+void alloc::Allocator::onFinishGC() noexcept {
+    alloc::FinishCollectGarbagePages();
+    impl_->heap().Dump();
+    impl_->heap().markGC(false);
+}
+// endregion
+
 void alloc::Allocator::clearForTests() noexcept {
     impl_->heap().ClearForTests();
 }

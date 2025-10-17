@@ -21,6 +21,35 @@ FixedBlockPage* FixedBlockPage::Create(uint32_t blockSize) noexcept {
     return new (SafeAlloc(SIZE)) FixedBlockPage(blockSize);
 }
 
+void FixedBlockPage::Dump(std::ostream& out) {
+    // out << "FixedBlockPage @" << this << ": ";
+    int blocks = end_ / blockSize_;
+    auto emptyBlocks = 0;
+    FixedCellRange free = nextFree_;
+    // if (free.first) {
+    //     out << " 0 = ";
+    // }
+    while (free.first < end_) {
+        if (free.last >= end_) break;
+        // out << free.first << " - " << free.last << " = ";
+        emptyBlocks += (free.last - free.first + 1);
+        auto nextFree = cells_[free.last].nextFree;
+        if (!nextFree.first || nextFree.first == free.last) {
+            break;
+        }
+        free = nextFree;
+    }
+    emptyBlocks = emptyBlocks / blockSize_;
+    if (emptyBlocks == blocks) {
+        out << "-";
+    } else if (emptyBlocks == 0) {
+        out << "+";
+    } else {
+        out << "(" << emptyBlocks * 100 / blocks << "%)";
+    }
+    // out << " (" << blocks << ")\n";
+}
+
 void FixedBlockPage::Destroy() noexcept {
     Free(this, SIZE);
 }

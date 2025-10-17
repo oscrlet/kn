@@ -55,6 +55,7 @@ public:
         }
     }
 
+    void Dump(std::ostream &out) override;
 private:
     ExtraObjectPage() noexcept;
 

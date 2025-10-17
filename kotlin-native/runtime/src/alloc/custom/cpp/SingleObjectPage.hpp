@@ -41,6 +41,7 @@ public:
         process(data_);
     }
 
+    void Dump(std::ostream &out) override;
 private:
     friend class Heap;
 

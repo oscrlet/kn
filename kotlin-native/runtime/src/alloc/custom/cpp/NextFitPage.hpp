@@ -62,6 +62,8 @@ public:
     // Testing method
     std::vector<uint8_t*> GetAllocatedBlocks() noexcept;
 
+    void Dump(std::ostream &out) override;
+
 private:
     explicit NextFitPage(uint32_t cellCount) noexcept;
 

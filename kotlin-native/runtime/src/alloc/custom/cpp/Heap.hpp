@@ -9,6 +9,15 @@
 #include <atomic>
 #include <mutex>
 #include <cstring>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
+#include <iostream>
+
 
 #include "AtomicStack.hpp"
 #include "ExtraObjectPage.hpp"
@@ -22,6 +31,76 @@
 #include "GCApi.hpp"
 
 namespace kotlin::alloc {
+
+class HeapUsageTracer {
+public:
+    // Singleton
+    static HeapUsageTracer& Instance() {
+        static HeapUsageTracer instance;
+        return instance;
+    }
+
+    HeapUsageTracer() {
+        start();
+    }
+
+    void start() {
+        stopRequested_ = false;
+        // Only start if not already running
+        if (tracingThread_.joinable()) return;
+        tracingThread_ = std::thread([this] { run(); });
+    }
+
+    void stop() {
+        stopRequested_ = true;
+        cv_.notify_all();
+        if (tracingThread_.joinable())
+            tracingThread_.join();
+        dump();
+    }
+
+    void markGC(bool status) {
+        if (!events_.empty())
+            events_.back().gc = (status);
+    }
+
+    void dump(std::ostream& out = std::cout) {
+        size_t max = 0;
+        for (const auto& e : events_) if (e.bytes > max) max = e.bytes;
+        for (const auto& e : events_) {
+            out << e.bytes << ","
+                << (e.gc ? "true\n" : "false\n");
+        }
+    }
+
+    ~HeapUsageTracer() { stop(); }
+
+private:
+    struct Event {
+        size_t bytes;
+        bool gc;
+    };
+
+    void run() {
+        auto next = std::chrono::steady_clock::now();
+        while (!stopRequested_) {
+            next += std::chrono::microseconds(100);
+            size_t bytes = GetAllocatedBytes();
+            {
+                events_.push_back({bytes, false});
+            }
+            std::unique_lock<std::mutex> lock(cvMutex_);
+            cv_.wait_until(lock, next, [this]() { return stopRequested_.load(); });
+        }
+    }
+
+    std::vector<Event> events_;
+    // std::mutex mutex_;
+    std::atomic<bool> stopRequested_{false};
+    std::thread tracingThread_;
+    std::condition_variable cv_;
+    std::mutex cvMutex_;
+};
 
 class Heap {
 public:
@@ -75,6 +154,39 @@ public:
         });
     }
 
+    void Dump() {
+        if (dumpEnabled == false) return;
+        for (int blockSize = 0; blockSize <= FixedBlockPage::MAX_BLOCK_SIZE; ++blockSize) {
+            if (fixedBlockPages_[blockSize].GetPages().empty()) {
+                continue;
+            }
+            std::cout << blockSize << ": ";
+            fixedBlockPages_[blockSize].TraversePages([](auto *page) {
+                page->Dump(std::cout);
+            });
+            std::cout << std::endl;
+        }
+        std::cout << "nextFitPages" << ": ";
+        nextFitPages_.TraversePages([](auto *page) {
+            page->Dump(std::cout);
+        });
+        std::cout << std::endl;
+        std::cout << "singleObjectPages" << ": ";
+        singleObjectPages_.TraversePages([](auto *page) {
+            page->Dump(std::cout);
+        });
+        std::cout << std::endl;
+        std::cout << "extraObjectPages" << ": ";
+        extraObjectPages_.TraversePages([](auto *page) {
+            page->Dump(std::cout);
+        });
+        std::cout << std::endl;
+    }
+
+    void markGC(bool status) {
+        heapUsageTracer_.markGC(status);
+    }
+
 private:
     PageStore<FixedBlockPage> fixedBlockPages_[FixedBlockPage::MAX_BLOCK_SIZE + 1];
     PageStore<NextFitPage> nextFitPages_;
@@ -87,6 +199,8 @@ private:
     std::atomic<std::size_t> concurrentSweepersCount_ = 0;
 
     AllocatedSizeTracker::Heap allocatedSizeTracker_{};
+    HeapUsageTracer& heapUsageTracer_ = HeapUsageTracer::Instance();
+    bool dumpEnabled = false;
 };
 
 } // namespace kotlin::alloc

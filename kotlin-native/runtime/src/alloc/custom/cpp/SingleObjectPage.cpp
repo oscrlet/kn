@@ -27,6 +27,18 @@ SingleObjectPage::SingleObjectPage(AllocationSize objectSize) noexcept {
     heap.allocatedSizeTracker().recordDifferenceAndNotifyScheduler(static_cast<ptrdiff_t>(objectSize.inBytes()));
 }
 
+void SingleObjectPage::Dump(std::ostream& out) {
+    // Only one object, so check if it's allocated.
+    auto* object = reinterpret_cast<CustomHeapObject*>(data_)->object();
+    bool alive = false;
+    if (object) {
+        // Heuristic: check if marked or if typeinfo looks valid, etc.
+        alive = true; // Or use your GC marking if available
+    }
+    out << "SingleObjectPage @" << this << ": "
+        << (alive ? "allocated" : "free") << "\n";
+}
+
 void SingleObjectPage::Destroy() noexcept {
     auto* object = reinterpret_cast<CustomHeapObject*>(data_)->object();
     auto objectSize = AllocationSize::bytesAtLeast(CustomAllocator::GetAllocatedHeapSize(object));

@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <ostream>
 #include <vector>
 
 #include "AllocatedSizeTracker.hpp"
@@ -24,6 +25,10 @@ private:
     friend class AtomicStack<Page>;
     // Used for linking pages together in `pages` queue or in `unswept` queue.
     std::atomic<Page*> next_ = nullptr;
+
+    virtual void Dump(std::ostream &out) {
+        (void)out;
+    }
 
 protected:
     // Intentionally non-virtual. `AnyPage` should not be used in any context other than base class clause.

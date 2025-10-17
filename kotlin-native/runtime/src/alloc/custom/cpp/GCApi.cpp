@@ -30,6 +30,15 @@ namespace {
 
 std::atomic<size_t> allocatedBytesCounter;
 
+// region Tencent Code
+struct GarbagePage {
+    void* ptr;
+    size_t size;
+};
+
+std::vector<GarbagePage> garbagePages;
+bool delayFreePageAfterSTW = false;
+// endregion
 }
 
 namespace kotlin::alloc {
@@ -130,8 +139,12 @@ void Free(void* ptr, size_t size) noexcept {
 #if KONAN_WINDOWS
         RuntimeFail("mmap is not available on mingw");
 #else
-        auto result = munmap(ptr, size);
-        RuntimeAssert(result == 0, "Failed to munmap: %s", strerror(errno));
+        if (delayFreePageAfterSTW) {
+            garbagePages.push_back({ptr, size});
+        } else {
+            auto result = munmap(ptr, size);
+            RuntimeAssert(result == 0, "Failed to munmap: %s", strerror(errno));
+        }
 #endif
     }
     allocatedBytesCounter.fetch_sub(static_cast<size_t>(size), std::memory_order_relaxed);
@@ -140,5 +153,28 @@ void Free(void* ptr, size_t size) noexcept {
 size_t GetAllocatedBytes() noexcept {
     return allocatedBytesCounter.load(std::memory_order_relaxed);
 }
+
+// region Tencent Code
+// call in gc thread
+void StartCollectGarbagePages() noexcept {
+    // delayFreePageAfterSTW = true;
+}
+
+// call in gc thread
+void FinishCollectGarbagePages() noexcept {
+    if (!compiler::disableMmap()) {
+#if KONAN_WINDOWS
+        RuntimeFail("mmap is not available on mingw");
+#else
+        for (auto& page : garbagePages) {
+            auto result = munmap(page.ptr, page.size);
+            RuntimeAssert(result == 0, "Failed to munmap: %s", strerror(errno));
+        }
+        garbagePages.clear();
+#endif
+    }
+    // delayFreePageAfterSTW = false;
+}
+// endregion
 
 } // namespace kotlin::alloc

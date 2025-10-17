@@ -49,6 +49,11 @@ public:
 
     void prepareForGC() noexcept;
 
+    // region Tencent Code
+    void onStartGC() noexcept;
+    void onFinishGC() noexcept;
+    // endregion
+
     // TODO: Move into AllocatorTestSupport.hpp
     void clearForTests() noexcept;
 

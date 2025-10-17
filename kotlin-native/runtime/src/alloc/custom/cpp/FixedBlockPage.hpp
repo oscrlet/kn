@@ -69,6 +69,7 @@ public:
         }
     }
 
+    void Dump(std::ostream &out) override;
     // Testing method
     std::vector<uint8_t*> GetAllocatedBlocks() noexcept;
 

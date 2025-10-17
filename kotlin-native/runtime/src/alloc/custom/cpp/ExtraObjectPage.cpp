@@ -31,6 +31,37 @@ ExtraObjectPage::ExtraObjectPage() noexcept {
     }
 }
 
+void ExtraObjectPage::Dump(std::ostream& out) {
+    out << "ExtraObjectPage @" << this << ": total cells = " << extraObjectCount() << "\n";
+    // Build a set of free cells
+    std::vector<bool> isFree(extraObjectCount(), false);
+    // Walk the free list
+    ExtraObjectCell* free = nextFree_.load(std::memory_order_relaxed);
+    while (free >= cells_ && free < cells_ + extraObjectCount()) {
+        int idx = free - cells_;
+        isFree[idx] = true;
+        free = free->next_.load(std::memory_order_relaxed);
+    }
+    // Print per-cell allocation status
+    for (int i = 0; i < extraObjectCount(); ++i) {
+        out << "  Cell " << i << ": " << (isFree[i] ? "free" : "allocated") << "\n";
+    }
+    // Print free fragments (contiguous runs)
+    bool inFragment = false;
+    int fragStart = 0;
+    for (int i = 0; i < extraObjectCount(); ++i) {
+        if (isFree[i] && !inFragment) {
+            fragStart = i;
+            inFragment = true;
+        }
+        if ((!isFree[i] || i + 1 == extraObjectCount()) && inFragment) {
+            int fragEnd = (isFree[i] ? i : i - 1);
+            out << "  Fragment: cells [" << fragStart << ", " << fragEnd << "]\n";
+            inFragment = false;
+        }
+    }
+}
+
 void ExtraObjectPage::Destroy() noexcept {
     Free(this, SIZE);
 }

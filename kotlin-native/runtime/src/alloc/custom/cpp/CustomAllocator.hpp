@@ -7,7 +7,9 @@
 #define CUSTOM_ALLOC_CPP_ALLOCATOR_HPP_
 
 #include <atomic>
+#include <cstdio>
 #include <cstring>
+#include <iostream>
 
 #include "AllocationSize.hpp"
 #include "ExtraObjectData.hpp"
@@ -16,6 +18,7 @@
 #include "NextFitPage.hpp"
 #include "Memory.h"
 #include "FixedBlockPage.hpp"
+#include "SingleObjectPage.hpp"
 
 namespace kotlin::alloc {
 

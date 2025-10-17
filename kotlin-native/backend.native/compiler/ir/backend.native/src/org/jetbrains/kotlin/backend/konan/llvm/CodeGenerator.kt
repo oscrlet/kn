@@ -725,7 +725,7 @@ internal abstract class FunctionGenerationContext(
     ): LLVMValueRef {
         val isObjectField = isObjectType && thisPtr != codegen.kNullObjHeaderPtr
         val value: LLVMValueRef
-        if (isObjectField) {
+        if (false && isObjectField) {
             value = loadFromCMC(address, thisPtr)
         } else {
             value = LLVMBuildLoad2(builder, type, address, name)!!
@@ -1373,7 +1373,7 @@ internal abstract class FunctionGenerationContext(
             memScoped {
                 slotToVariableLocation.forEach { (slot, variable) ->
                     val expr = longArrayOf(DwarfOp.DW_OP_plus_uconst.value,
-                            runtime.pointerSize * slot.toLong()).toCValues()  
+                            runtime.pointerSize * slot.toLong()).toCValues()
                     DIInsertDeclaration(
                             builder       = generationState.debugInfo.builder,
                             value         = slots,

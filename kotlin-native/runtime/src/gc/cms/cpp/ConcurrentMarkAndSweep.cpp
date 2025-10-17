@@ -154,6 +154,7 @@ void gc::ConcurrentMarkAndSweep::PerformFullGC(int64_t epoch) noexcept {
     }
     allocator_.prepareForGC();
 
+    allocator_.onStartGC();
 #ifndef CUSTOM_ALLOCATOR
     // Taking the locks before the pause is completed. So that any destroying thread
     // would not publish into the global state at an unexpected time.
@@ -183,6 +184,8 @@ void gc::ConcurrentMarkAndSweep::PerformFullGC(int64_t epoch) noexcept {
     state_.finish(epoch);
     gcHandle.finalizersScheduled(finalizerQueue.size());
     gcHandle.finished();
+
+    allocator_.onFinishGC();
 
     if (!mainThreadFinalizerProcessor_.available()) {
         finalizerQueue.mergeIntoRegular();
